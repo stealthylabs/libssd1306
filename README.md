@@ -9,14 +9,19 @@ others, and whose data sheet can be found [here](https://www.olimex.com/Products
 If your goal is to use Arduino or CircuitPython, this library is **not** for
 you.
 
-This library is for the case when you are using the Raspberry Pi or Beaglebone
-or any Linux single board computer (SBC) with I2C pins and want a tiny display.
+This library is for the special use case where you have an application running
+on the Raspberry Pi, Beaglebone Black or any other Linux single board computer
+(SBC) with I<sup>2</sup>C pins available to connect this OLED screen to.
 
 Sometimes you want to integrate this display into a larger code base which is
-not written in Python but needs to run on this device.
+**not** written in Python but needs to run on such devices.
 
 This is why this library is in C, so it can directly execute on the Raspberry Pi
-or similar SBCs where it can be integrated into other applications.
+or similar SBCs where it can be integrated into other applications easily.
+
+Another reason for using this C library is to be able to integrate this display
+with libraries like `libuv` and control the display using events and keeping the
+power consumption low on such devices. 
 
 
 ## COPYRIGHT
