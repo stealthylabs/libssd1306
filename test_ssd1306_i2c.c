@@ -1,3 +1,9 @@
+/*
+ * COPYRIGHT: 2020. Stealthy Labs LLC.
+ * DATE: 2020-01-15
+ * SOFTWARE: libssd1306-i2c
+ * LICENSE: Refer license file
+ */
 #include <errno.h>
 #include <unistd.h>
 #include <fcntl.h>
