@@ -1,0 +1,9 @@
+*.o
+*.so
+*.out
+*.log
+.*.swp
+*.tmp
+TODO
+todo
+test_ssd1306_i2c
