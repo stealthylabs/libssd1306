@@ -10,7 +10,7 @@ INSTALL?=$(shell which install)
 CFLAGS_COMMON=-Wall -std=c99 -pedantic -posix -fPIC -D_DEFAULT_SOURCE -D_REENTRANT
 CFLAGS_DEBUG=-g -O0
 CFLAGS_RELEASE=-g -O
-I2C_LIBS=-li2c
+I2C_LIBS=#-li2c
 INC=-I$(PWD)
 LDFLAGS=-L$(PWD)
 SOFLAGS=-shared
