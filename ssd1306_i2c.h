@@ -51,6 +51,8 @@ typedef enum {
     SSD1306_I2C_CMD_MEM_ADDR_HORIZ, // set horizontal addressing mode
     SSD1306_I2C_CMD_MEM_ADDR_VERT, // set vertical addressing mode
     SSD1306_I2C_CMD_MEM_ADDR_PAGE, // set page addressing mode (RESET)
+    SSD1306_I2C_CMD_COLUMN_ADDR, // set column address. requires 2 data bytes
+    SSD1306_I2C_CMD_PAGE_ADDR, // set page address. requires 2 data bytes
     // layout
     SSD1306_I2C_CMD_DISP_START_LINE, // set display start line. data 0x00-0x3F
     SSD1306_I2C_CMD_DISP_OFFSET, // set display offset. data 0x00-0x3F
@@ -74,10 +76,16 @@ typedef enum {
 
 int ssd1306_i2c_run_cmd(ssd1306_i2c_t *oled, // the ssd1306_i2c_t object
         ssd1306_i2c_cmd_t cmd, // command to run on the display
-        uint8_t data // optional command data, if any, otherwise use 0.
+        uint8_t *data, // optional command data, if any, otherwise use 0 or NULL
+        size_t dlen // length of the data bytes. max is 6 per datasheet.
+                    // anything more than 6 will be ignored.
     );
 
+// initialize the display before use
 int ssd1306_i2c_display_initialize(ssd1306_i2c_t *oled);
+// update the display with the screen_buffer contents.
+// this function can be called in an idle loop or on a timer or on-demand
+int ssd1306_i2c_display_update(ssd1306_i2c_t *oled);
 
 #ifdef __cplusplus
 }  // extern "C"

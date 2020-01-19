@@ -19,11 +19,11 @@ int main ()
         return -1;
     }
     ssd1306_i2c_display_initialize(oled);
-    ssd1306_i2c_run_cmd(oled, SSD1306_I2C_CMD_POWER_ON, 0);
+    ssd1306_i2c_run_cmd(oled, SSD1306_I2C_CMD_POWER_ON, 0, 0);
     sleep(5);
-    ssd1306_i2c_run_cmd(oled, SSD1306_I2C_CMD_DISP_INVERTED, 0);
+    ssd1306_i2c_run_cmd(oled, SSD1306_I2C_CMD_DISP_INVERTED, 0, 0);
     sleep(5);
-    ssd1306_i2c_run_cmd(oled, SSD1306_I2C_CMD_POWER_OFF, 0);
+    ssd1306_i2c_run_cmd(oled, SSD1306_I2C_CMD_POWER_OFF, 0, 0);
     ssd1306_i2c_close(oled);
     oled = NULL;
 	return 0;
