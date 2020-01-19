@@ -21,6 +21,7 @@ TARGET_EXE=test_ssd1306_i2c
 
 LIB_OBJS=$(patsubst %.c,%.o,$(wildcard ssd1306_i2c*.c))
 TARGET_HEADERS=$(wildcard ssd1306_i2c*.h)
+DEPENDS=$(patsubst %.c,%.d,$(wildcard *.c))
 
 ifeq ($(RELEASE),1)
  CFLAGS=$(CFLAGS_COMMON) $(CFLAGS_RELEASE)
@@ -39,7 +40,7 @@ release:
 build: $(TARGET_LIB) $(TARGET_EXE)
 
 clean:
-	rm -f $(TARGET_LIB) $(TARGET_EXE) *.o
+	rm -f $(TARGET_LIB) $(TARGET_EXE) *.o *.d
 
 install: build
 	@$(INSTALL) -d $(PREFIX)/lib
@@ -54,7 +55,9 @@ $(TARGET_EXE): $(TARGET_EXE).o $(TARGET_LIB)
 	$(CC) $(CFLAGS) $(LDFLAGS) $(EXEFLAGS) -o $@ $^
 
 %.o: %.c
-	$(CC) $(CFLAGS) $(INC) -o $@ -c $^
+	$(CC) $(CFLAGS) $(INC) -MMD -MP -o $@ -c $<
+
+-include $(DEPENDS)
 
 .PHONY: default clean debug release build install uninstall
 

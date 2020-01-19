@@ -14,20 +14,16 @@
 int main ()
 {
 	const char *filename = "/dev/i2c-1";
-	size_t length;
-	unsigned char buffer[64] = { 0 };
-    ssd1306_i2c_t *oled = ssd1306_i2c_open(filename, 0, 0, 0);
+    ssd1306_i2c_t *oled = ssd1306_i2c_open(filename, 0, 0, 0, NULL);
     if (!oled) {
         return -1;
     }
-	length = 4;
-	buffer[0] = 0xAF;
-	buffer[1] = 0xA6;
-	buffer[2] = 0xA7;
-	buffer[3] = 0xA7;
-	int rc = write(oled->fd, buffer, length);
-	int err = errno;
-	fprintf(stderr, "Write byte: %d Errno: %s\n", rc, strerror(err));
+    ssd1306_i2c_display_initialize(oled);
+    ssd1306_i2c_run_cmd(oled, SSD1306_I2C_CMD_POWER_ON, 0);
+    sleep(5);
+    ssd1306_i2c_run_cmd(oled, SSD1306_I2C_CMD_DISP_INVERTED, 0);
+    sleep(5);
+    ssd1306_i2c_run_cmd(oled, SSD1306_I2C_CMD_POWER_OFF, 0);
     ssd1306_i2c_close(oled);
     oled = NULL;
 	return 0;
