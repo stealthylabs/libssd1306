@@ -59,17 +59,17 @@ typedef enum {
     SSD1306_I2C_CMD_DISP_CONTRAST, // set display contrast control. data: 1-255
     SSD1306_I2C_CMD_DISP_NORMAL, // set display normal
     SSD1306_I2C_CMD_DISP_INVERTED, // set display inverted
-    SSD1306_I2C_CMD_DISP_FOLLOW_RAM, // set display follow RAM content
-    SSD1306_I2C_CMD_DISP_NOFOLLOW_RAM, // set display not follow RAM content
-    SSD1306_I2C_CMD_SEG_REMAP_COL0, // set segment remap for column 0
-    SSD1306_I2C_CMD_SEG_REMAP_COL127, // set segment remap for column 127
+    SSD1306_I2C_CMD_DISP_DISABLE_ENTIRE_ON, // disable entire display on
+    SSD1306_I2C_CMD_DISP_ENTIRE_ON, // set entire display on
+    SSD1306_I2C_CMD_SEG_REMAP, // set segment remap. data: 0 for col 0 or 1 for col 127
     SSD1306_I2C_CMD_MUX_RATIO, // set multiplex ratio 0x1F or 0x3F
     SSD1306_I2C_CMD_COM_SCAN_DIRXN_NORMAL, // set COM pins scan direction normal
     SSD1306_I2C_CMD_COM_SCAN_DIRXN_INVERT, // set COM pins scan direction reverse
     SSD1306_I2C_CMD_COM_PIN_CFG, // set COM pin config. data: 0x02, 0x12, 0x22, 0x32
     SSD1306_I2C_CMD_PRECHARGE_PERIOD, // set precharge period. data: 0xF1 for reset. refer datasheet
     SSD1306_I2C_CMD_VCOMH_DESELECT, // set VCOMH deselect level
-    SSD1306_I2C_CMD_CHARGE_PUMP
+    SSD1306_I2C_CMD_ENABLE_CHARGE_PUMP, // enable charge pump regulator
+    SSD1306_I2C_CMD_DISABLE_CHARGE_PUMP, // disable charge pump regulator
 } ssd1306_i2c_cmd_t;
 
 int ssd1306_i2c_run_cmd(ssd1306_i2c_t *oled, // the ssd1306_i2c_t object

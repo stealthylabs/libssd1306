@@ -184,10 +184,9 @@ static size_t ssd1306_i2c_internal_get_cmd_bytes(ssd1306_i2c_cmd_t cmd,
         break;
     case SSD1306_I2C_CMD_DISP_NORMAL: cmdbuf[1] = 0xA6; break;
     case SSD1306_I2C_CMD_DISP_INVERTED: cmdbuf[1] = 0xA7; break;
-    case SSD1306_I2C_CMD_DISP_FOLLOW_RAM: cmdbuf[1] = 0xA4; break;
-    case SSD1306_I2C_CMD_DISP_NOFOLLOW_RAM: cmdbuf[1] = 0xA5; break;
-    case SSD1306_I2C_CMD_SEG_REMAP_COL0: cmdbuf[1] = 0xA0; break;
-    case SSD1306_I2C_CMD_SEG_REMAP_COL127: cmdbuf[1] = 0xA1; break;
+    case SSD1306_I2C_CMD_DISP_DISABLE_ENTIRE_ON: cmdbuf[1] = 0xA4; break;
+    case SSD1306_I2C_CMD_DISP_ENTIRE_ON: cmdbuf[1] = 0xA5; break;
+    case SSD1306_I2C_CMD_SEG_REMAP: cmdbuf[1] = 0xA0 | (data & 0x1); break;
     case SSD1306_I2C_CMD_MUX_RATIO:
         cmdbuf[1] = 0xA8;
         cmdbuf[3] = (data == 0) ? 0xFF : data; // all 1s is a RESET
@@ -206,9 +205,13 @@ static size_t ssd1306_i2c_internal_get_cmd_bytes(ssd1306_i2c_cmd_t cmd,
         cmdbuf[1] = 0xDB;
         cmdbuf[3] = (data & 0x70); // 0b0AAA0000
         break;
-    case SSD1306_I2C_CMD_CHARGE_PUMP:
+    case SSD1306_I2C_CMD_ENABLE_CHARGE_PUMP:
         cmdbuf[1] = 0x8D;
-        cmdbuf[3] = (data & 0x14); // 0b00010A00
+        cmdbuf[3] = 0x14; // 0b00010100
+        break;
+    case SSD1306_I2C_CMD_DISABLE_CHARGE_PUMP:
+        cmdbuf[1] = 0x8D;
+        cmdbuf[3] = 0x10; // 0b00010000
         break;
     case SSD1306_I2C_CMD_NOP: // fallthrough
     default:
@@ -223,21 +226,36 @@ int ssd1306_i2c_display_initialize(ssd1306_i2c_t *oled)
     int rc = 0;
     rc |= ssd1306_i2c_run_cmd(oled, SSD1306_I2C_CMD_POWER_OFF, 0);
     rc |= ssd1306_i2c_run_cmd(oled, SSD1306_I2C_CMD_MEM_ADDR_HORIZ, 0);
-    rc |= ssd1306_i2c_run_cmd(oled, SSD1306_I2C_CMD_DISP_START_LINE, 0);
-    rc |= ssd1306_i2c_run_cmd(oled, SSD1306_I2C_CMD_SEG_REMAP_COL127, 0);
+    // these instructions are from the software configuration section 15.2.3 in
+    // the datasheet
+    // Set MUX Ratio 0xA8, 0x3F
     rc |= ssd1306_i2c_run_cmd(oled, SSD1306_I2C_CMD_MUX_RATIO,
                         (oled->height == 32) ? 0x1F : 0x3F);
-    rc |= ssd1306_i2c_run_cmd(oled, SSD1306_I2C_CMD_COM_SCAN_DIRXN_INVERT, 0);
+    // Set display offset 0xD3, 0x00
     rc |= ssd1306_i2c_run_cmd(oled, SSD1306_I2C_CMD_DISP_OFFSET, 0);
+    // set display start line 0x40
+    rc |= ssd1306_i2c_run_cmd(oled, SSD1306_I2C_CMD_DISP_START_LINE, 0);
+    // set segment remap 0xA0/0xA1
+    rc |= ssd1306_i2c_run_cmd(oled, SSD1306_I2C_CMD_SEG_REMAP, 1);
+    // set com output scan direction 0xC0/0xC8
+    rc |= ssd1306_i2c_run_cmd(oled, SSD1306_I2C_CMD_COM_SCAN_DIRXN_INVERT, 0);
+    // set com pins hardware config 0xDA, 0x02
     rc |= ssd1306_i2c_run_cmd(oled, SSD1306_I2C_CMD_COM_PIN_CFG,
                         (oled->height == 32) ? 0x02 : 0x12);
+    // set contrast control 0x81, 0x7F
+    rc |= ssd1306_i2c_run_cmd(oled, SSD1306_I2C_CMD_DISP_CONTRAST, 0x7F);
+    // disable entire display on 0xA4
+    rc |= ssd1306_i2c_run_cmd(oled, SSD1306_I2C_CMD_DISP_DISABLE_ENTIRE_ON, 0);
+    // set normal display 0xA6
+    rc |= ssd1306_i2c_run_cmd(oled, SSD1306_I2C_CMD_DISP_NORMAL, 0);
+    // set osc frequency 0xD5, 0x80
     rc |= ssd1306_i2c_run_cmd(oled, SSD1306_I2C_CMD_DISP_CLOCK_DIVFREQ, 0x80); //RESET 0b10000000
     rc |= ssd1306_i2c_run_cmd(oled, SSD1306_I2C_CMD_PRECHARGE_PERIOD, 0xF1);
     rc |= ssd1306_i2c_run_cmd(oled, SSD1306_I2C_CMD_VCOMH_DESELECT, 0x30);
-    rc |= ssd1306_i2c_run_cmd(oled, SSD1306_I2C_CMD_DISP_CONTRAST, 0xFF);
-    rc |= ssd1306_i2c_run_cmd(oled, SSD1306_I2C_CMD_DISP_FOLLOW_RAM, 0);
-    rc |= ssd1306_i2c_run_cmd(oled, SSD1306_I2C_CMD_DISP_NORMAL, 0);
-    rc |= ssd1306_i2c_run_cmd(oled, SSD1306_I2C_CMD_CHARGE_PUMP, 0x14);
+    // enable charge pump regulator 0x8D, 0x14
+    // charge pump has to be followed by a power on. section 15.2.1 in datasheet
+    rc |= ssd1306_i2c_run_cmd(oled, SSD1306_I2C_CMD_ENABLE_CHARGE_PUMP, 0);
+    // power display on 0xAF
     rc |= ssd1306_i2c_run_cmd(oled, SSD1306_I2C_CMD_POWER_ON, 0);
     return rc;
 }
