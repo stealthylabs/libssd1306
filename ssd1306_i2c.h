@@ -28,6 +28,7 @@ typedef struct {
     uint8_t height; // default 128
     uint8_t width;  // default 32
     uint8_t *screen_buffer; // buffer for of size height x width + 1 ctrl byte for writing data on GDRAM
+    size_t screen_buffer_len; // value = (height * width + 1)
     bool is_power_on;  // check if power is on
     ssd1306_i2c_err_t err; // for re-entrant error handling
 } ssd1306_i2c_t;
