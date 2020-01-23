@@ -7,7 +7,7 @@ PREFIX?=/usr/local
 CC?=$(shell which gcc)
 CXX?=$(shell which g++)
 INSTALL?=$(shell which install)
-CFLAGS_COMMON=-Wall -std=c99 -pedantic -posix -fPIC -D_DEFAULT_SOURCE -D_REENTRANT
+CFLAGS_COMMON=-Wall -std=c11 -pedantic -posix -fPIC -D_DEFAULT_SOURCE -D_REENTRANT
 CFLAGS_DEBUG=-g -O0
 CFLAGS_RELEASE=-g -O
 I2C_LIBS=#-li2c
@@ -36,6 +36,8 @@ debug:
 
 release:
 	$(MAKE) RELEASE=1 build
+
+rebuild: clean build
 
 build: $(TARGET_LIB) $(TARGET_EXE)
 
