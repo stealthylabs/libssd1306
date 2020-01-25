@@ -63,21 +63,32 @@ ssd1306_i2c_t *ssd1306_i2c_open(
         } else if (addr == 0x3d) {
             oled->addr = 0x3d;
         } else {
-            fprintf(err_fp, "WARN: I2C device addr cannot be 0x%x. Using 0x3c\n",
+            fprintf(err_fp, "WARN: I2C device addr cannot be 0x%02x. Using 0x3c\n",
                     addr);
             oled->addr = 0x3c;
         }
-        oled->width = 128; //XXX: can this be 64 ?
-        if (height == 32 || height == 0) {
-            oled->height = 32;
-        } else if (height == 64) {
-            oled->height = 64;
+        if (width == 128 || width == 0) {
+            oled->width = 128;
+        } else if (width == 96) {
+            oled->width = 96;
         } else {
-            fprintf(err_fp, "WARN: OLED screen height cannot be %d. Using %d\n",
-                    height, 32);
-            oled->height = 32;
+            fprintf(err_fp, "WARN: OLED screen width cannot be %d. has to be either 96 or 128. Using 128\n",
+                    width);
+            oled->width = 128;
         }
-        oled->screen_buffer_len = sizeof(uint8_t) * (oled->width * oled->height + 1);
+        if (height == 64 || height == 0) {
+            oled->height = 64;
+        } else if (height == 32) {
+            oled->height = 32;
+        } else if (height == 16) {
+            oled->height = 16;
+        } else {
+            fprintf(err_fp, "WARN: OLED screen height cannot be %d. has to be either 16, 32 or 64. Using %d\n",
+                    height, (oled->width == 96) ? 16 : 64);
+            oled->height = (oled->width == 96) ? 16 : 64;
+        }
+        // this is width x height bits of GDDRAM
+        oled->screen_buffer_len = sizeof(uint8_t) * (oled->width * oled->height) / 8;
         oled->screen_buffer = calloc(1, oled->screen_buffer_len);
         if (!oled->screen_buffer) {
             oled->err.errnum = errno;
@@ -101,12 +112,12 @@ ssd1306_i2c_t *ssd1306_i2c_open(
             if (ioctl(oled->fd, I2C_SLAVE, addr) < 0) {
                 oled->err.errnum = errno;
                 strerror_r(oled->err.errnum, oled->err.errstr, oled->err.errstr_max_len);
-                fprintf(err_fp, "ERROR: Failed to set I2C_SLAVE for %s addr 0x%x: %s\n",
+                fprintf(err_fp, "ERROR: Failed to set I2C_SLAVE for %s addr 0x%02x: %s\n",
                         dev, addr, oled->err.errstr);
                 rc = -1;
                 break;
             } else {
-                fprintf(err_fp, "INFO: I2C_SLAVE for %s addr 0x%x opened in RDWR mode\n",
+                fprintf(err_fp, "INFO: I2C_SLAVE for %s addr 0x%02x opened in RDWR mode\n",
                         dev, addr);
                 rc = 0;
             }
@@ -263,6 +274,9 @@ static size_t ssd1306_i2c_internal_get_cmd_bytes(ssd1306_i2c_cmd_t cmd,
         cmdbuf[3] = 0x10; // 0b00010000
         sz = 4;
         break;
+    case SSD1306_I2C_CMD_SCROLL_DEACTIVATE:
+        cmdbuf[1] = 0x2F;
+        break;
     case SSD1306_I2C_CMD_NOP: // fallthrough
     default:
         cmdbuf[1] = 0xE3; // NOP
@@ -300,10 +314,10 @@ int ssd1306_i2c_display_initialize(ssd1306_i2c_t *oled)
     // set com output scan direction 0xC0/0xC8
     rc |= ssd1306_i2c_run_cmd(oled, SSD1306_I2C_CMD_COM_SCAN_DIRXN_INVERT, 0, 0);
     // set com pins hardware config 0xDA, 0x02
-    data = 0x02;
+    data = (oled->height == 32) ? 0x02 : 0x12;
     rc |= ssd1306_i2c_run_cmd(oled, SSD1306_I2C_CMD_COM_PIN_CFG, &data, 1);
     // set contrast control 0x81, 0x7F
-    data = 0x7F;
+    data = 0xFF;
     rc |= ssd1306_i2c_run_cmd(oled, SSD1306_I2C_CMD_DISP_CONTRAST, &data, 1);
     // disable entire display on 0xA4
     rc |= ssd1306_i2c_run_cmd(oled, SSD1306_I2C_CMD_DISP_DISABLE_ENTIRE_ON, 0, 0);
@@ -321,6 +335,9 @@ int ssd1306_i2c_display_initialize(ssd1306_i2c_t *oled)
     rc |= ssd1306_i2c_run_cmd(oled, SSD1306_I2C_CMD_ENABLE_CHARGE_PUMP, 0, 0);
     // power display on 0xAF
     rc |= ssd1306_i2c_run_cmd(oled, SSD1306_I2C_CMD_POWER_ON, 0, 0);
+    // deactivate scrolling
+    rc |= ssd1306_i2c_run_cmd(oled, SSD1306_I2C_CMD_SCROLL_DEACTIVATE, 0, 0);
+    rc |= ssd1306_i2c_display_clear(oled);
     return rc;
 }
 
@@ -354,7 +371,7 @@ int ssd1306_i2c_run_cmd(ssd1306_i2c_t *oled, ssd1306_i2c_cmd_t cmd, uint8_t *dat
         strerror_r(oled->err.errnum, oled->err.errstr, oled->err.errstr_max_len);
         fprintf(err_fp, "ERROR: Failed to write cmd ");
         for (size_t idx = 0; idx < cmd_sz; ++idx) {
-            fprintf(err_fp, "%c0x%x%c", (idx == 0) ? '[' : ' ',
+            fprintf(err_fp, "%c0x%02x%c", (idx == 0) ? '[' : ' ',
                     cmd_buf[idx], (idx == (cmd_sz - 1)) ? ']' : ',');
         }
         fprintf(err_fp, " to device fd %d: %s\n",
@@ -363,7 +380,7 @@ int ssd1306_i2c_run_cmd(ssd1306_i2c_t *oled, ssd1306_i2c_cmd_t cmd, uint8_t *dat
     }
     fprintf(err_fp, "INFO: Wrote %zd bytes of cmd ", nb);
     for (size_t idx = 0; idx < cmd_sz; ++idx) {
-        fprintf(err_fp, "%c0x%x%c", (idx == 0) ? '[' : ' ',
+        fprintf(err_fp, "%c0x%02x%c", (idx == 0) ? '[' : ' ',
                 cmd_buf[idx], (idx == (cmd_sz - 1)) ? ']' : ',');
     }
     fprintf(err_fp, " to device fd %d\n", oled->fd);
@@ -381,13 +398,21 @@ int ssd1306_i2c_display_update(ssd1306_i2c_t *oled)
     uint8_t x[2] = { 0, oled->width - 1 };
     rc |= ssd1306_i2c_run_cmd(oled, SSD1306_I2C_CMD_COLUMN_ADDR, x, 2);
     x[0] = 0;
-    x[1] = oled->height - 1;
+    x[1] = (oled->height / 8) - 1; // number of pages
     rc |= ssd1306_i2c_run_cmd(oled, SSD1306_I2C_CMD_PAGE_ADDR, x, 2);
     if (rc != 0) {
         fprintf(err_fp, "WARN: Unable to update display, exiting from earlier errors\n");
         return -1;
     }
-    oled->screen_buffer[0] = 0x40; // Co: 0 D/C#: 1 0b01000000
+    uint8_t data_byte = 0x40; // Co: 0 D/C#: 1 0b01000000
+    ssize_t nb0 = write(oled->fd, &data_byte, 1);
+    if (nb0 != 1) {
+        oled->err.errnum = errno;
+        strerror_r(oled->err.errnum, oled->err.errstr, oled->err.errstr_max_len);
+        fprintf(err_fp, "ERROR: Failed to write %zu bytes of screen buffer to device fd %d : %s\n",
+                oled->screen_buffer_len, oled->fd, oled->err.errstr);
+        return -1;
+    }
     // the rest is framebuffer data for the GDDRAM as in section 8.1.5.2
     ssize_t nb = write(oled->fd, oled->screen_buffer, oled->screen_buffer_len);
     if (nb < 0) {
@@ -397,7 +422,19 @@ int ssd1306_i2c_display_update(ssd1306_i2c_t *oled)
                 oled->screen_buffer_len, oled->fd, oled->err.errstr);
         return -1;
     }
+    nb += nb0;
     fprintf(err_fp, "INFO: Wrote %zd bytes of screen buffer to device fd %d\n", nb, oled->fd);
     return 0;
 }
 
+int ssd1306_i2c_display_clear(ssd1306_i2c_t *oled)
+{
+    if (oled != NULL && oled->screen_buffer != NULL && oled->screen_buffer_len > 0) {
+        memset(oled->screen_buffer, 0, sizeof(uint8_t) * oled->screen_buffer_len);
+        return ssd1306_i2c_display_update(oled);
+    } else {
+        FILE *err_fp = (oled != NULL && oled->err.err_fp != NULL) ? oled->err.err_fp : stderr;
+        fprintf(err_fp, "ERROR: Invalid OLED object. Failed to clear display\n");
+        return -1;
+    }
+}

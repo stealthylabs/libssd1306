@@ -14,16 +14,22 @@
 int main ()
 {
 	const char *filename = "/dev/i2c-1";
-    ssd1306_i2c_t *oled = ssd1306_i2c_open(filename, 0, 0, 0, NULL);
+    ssd1306_i2c_t *oled = ssd1306_i2c_open(filename, 0x3c, 128, 32, NULL);
     if (!oled) {
         return -1;
     }
     ssd1306_i2c_display_initialize(oled);
     ssd1306_i2c_run_cmd(oled, SSD1306_I2C_CMD_POWER_ON, 0, 0);
     sleep(3);
-    ssd1306_i2c_display_update(oled);
+    //ssd1306_i2c_run_cmd(oled, SSD1306_I2C_CMD_DISP_INVERTED, 0, 0);
+    ssd1306_i2c_display_clear(oled);
     sleep(3);
-    ssd1306_i2c_run_cmd(oled, SSD1306_I2C_CMD_DISP_INVERTED, 0, 0);
+    for (size_t i = 0; i < oled->screen_buffer_len; ++i) {
+        if (i % 2) {
+            oled->screen_buffer[i] = 0xFF;
+        }
+    }
+    ssd1306_i2c_display_update(oled);
     sleep(3);
     ssd1306_i2c_run_cmd(oled, SSD1306_I2C_CMD_POWER_OFF, 0, 0);
     ssd1306_i2c_close(oled);
