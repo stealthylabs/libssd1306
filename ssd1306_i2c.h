@@ -87,11 +87,11 @@ int ssd1306_i2c_run_cmd(ssd1306_i2c_t *oled, // the ssd1306_i2c_t object
 int ssd1306_i2c_display_initialize(ssd1306_i2c_t *oled);
 // clear the display (calls ssd1306_i2c_display_update() internally)
 int ssd1306_i2c_display_clear(ssd1306_i2c_t *oled);
-// update the display with the screen_buffer contents.
+// get the framebuffer pointers for manipulation. returns -1 on error
+int ssd1306_i2c_display_get_framebuffer(ssd1306_i2c_t *oled, uint8_t **buf, size_t *len);
+// update the display with the framebuffer contents.
 // this function can be called in an idle loop or on a timer or on-demand
 int ssd1306_i2c_display_update(ssd1306_i2c_t *oled);
-// get the framebuffer pointers for manipulation. returns -1 on error
-int ssd1306_i2c_get_framebuffer(ssd1306_i2c_t *oled, uint8_t **buf, size_t *len);
 
 #ifdef __cplusplus
 }  // extern "C"

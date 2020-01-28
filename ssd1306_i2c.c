@@ -424,7 +424,7 @@ int ssd1306_i2c_display_update(ssd1306_i2c_t *oled)
     return 0;
 }
 
-int ssd1306_i2c_get_framebuffer(ssd1306_i2c_t *oled, uint8_t **obuf, size_t *olen)
+int ssd1306_i2c_display_get_framebuffer(ssd1306_i2c_t *oled, uint8_t **obuf, size_t *olen)
 {
     if (oled != NULL && oled->gddram_buffer != NULL && oled->gddram_buffer_len > 0 &&
         obuf != NULL && olen != NULL) {
