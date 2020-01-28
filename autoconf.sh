@@ -1,3 +1,0 @@
-automake
-autoconf
-#autoheader

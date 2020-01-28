@@ -20,3 +20,6 @@ stamp-h1
 *.la
 .libs
 *.lo
+configure
+aclocal.m4
+libtool
