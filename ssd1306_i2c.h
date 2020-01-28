@@ -94,6 +94,8 @@ int ssd1306_i2c_display_get_framebuffer(ssd1306_i2c_t *oled, uint8_t **buf, size
 // this function can be called in an idle loop or on a timer or on-demand
 int ssd1306_i2c_display_update(ssd1306_i2c_t *oled);
 
+const char *ssd1306_i2c_version(void);
+
 #ifdef __cplusplus
 }  // extern "C"
 #endif

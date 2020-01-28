@@ -1,0 +1,70 @@
+########################################
+##COPYRIGHT: 2020. Stealthy Labs LLC
+##DATE: 2020-01-28
+##LICENSE: Refer LICENSE file.
+########################################
+# initially generated using autoscan and then modified manually
+#                                               -*- Autoconf -*-
+# Process this file with autoconf to produce a configure script.
+
+AC_PREREQ([2.69])
+AC_INIT([libssd1306_i2c], [0.1], [github@stealthylabs.com])
+AM_INIT_AUTOMAKE
+AC_CONFIG_SRCDIR([ssd1306_i2c.c])
+#AC_CONFIG_HEADERS([ssd1306_i2c_config.h])
+AM_CONFIG_HEADER(ssd1306_i2c_config.h)
+
+# Checks for programs.
+AC_PROG_CC
+AC_PROG_RANLIB
+AC_PROG_INSTALL
+
+# Checks for libraries.
+
+# Checks for header files.
+AC_CHECK_HEADERS([ errno.h features.h fcntl.h inttypes.h stdlib.h string.h ])
+AC_CHECK_HEADERS([sys/ioctl.h unistd.h stdio.h linux/i2c-dev.h])
+
+# Checks for typedefs, structures, and compiler characteristics.
+AC_TYPE_SIZE_T
+AC_TYPE_SSIZE_T
+AC_TYPE_UINT64_T
+AC_TYPE_INT64_T
+AC_TYPE_UINT32_T
+AC_TYPE_INT32_T
+AC_TYPE_UINT16_T
+AC_TYPE_INT16_T
+AC_TYPE_UINT8_T
+AC_TYPE_INT8_T
+AC_TYPE_UINTPTR_T
+AC_TYPE_INTPTR_T
+
+# Checks for library functions.
+AC_FUNC_STRERROR_R
+AC_CHECK_FUNCS([memset strdup memcpy calloc ioctl])
+
+# shared library generation stuff
+AC_ENABLE_SHARED
+AC_DISABLE_STATIC
+LT_INIT
+## debug test
+AC_MSG_CHECKING([whether to build with debug information])
+AC_ARG_ENABLE([debug],
+              [AS_HELP_STRING([--enable-debug], [enable debug data generation (def=no)])],
+              [debugit="$enableval"],
+              [debugit=no])
+AC_MSG_RESULT([$debugit])
+AM_CFLAGS="$AM_CFLAGS -Wall -Wno-uninitialized -fPIC -pedantic -posix -std=c11 -D_DEFAULT_SOURCE -D_REENTRANT"
+if test x"$debugit" = x"yes"; then
+    AC_DEFINE([DEBUG],[],[Debug Mode])
+    AM_CFLAGS="$AM_CFLAGS -g -Werror -O0"
+else
+    AC_DEFINE([NDEBUG],[],[No Debug Mode])
+    AM_CFLAGS="$AM_CFLAGS"
+fi
+
+AC_SUBST([AM_CFLAGS])
+AC_SUBST([AM_LDFLAGS])
+
+AC_CONFIG_FILES([Makefile])
+AC_OUTPUT

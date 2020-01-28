@@ -10,3 +10,13 @@ todo
 test_ssd1306_i2c
 tags
 TAGS
+autom4te.cache
+config.status
+ssd1306_i2c_config.h
+Makefile
+.deps
+*~
+stamp-h1
+*.la
+.libs
+*.lo

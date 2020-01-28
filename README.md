@@ -24,6 +24,14 @@ with libraries like `libuv` and control the display using events and keeping the
 power consumption low on such devices. 
 
 
+## BUILD and TEST
+
+```bash
+$ ./configure && make
+$ ./test_ssd1306_i2c
+```
+
+
 ## COPYRIGHT
 
 &copy; 2020. Stealthy Labs LLC. All Rights Reserved.

@@ -4,17 +4,35 @@
  * SOFTWARE: libssd1306-i2c
  * LICENSE: Refer license file
  */
+#include "ssd1306_i2c_config.h"
+#if HAVE_FEATURES_H
 #include <features.h>
+#endif
 #include <errno.h>
 #include <unistd.h>
 #include <fcntl.h>
-//#include <i2c/smbus.h>
 #include <sys/ioctl.h>
-#include <linux/i2c-dev.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+
+#if HAVE_LINUX_I2C_DEV_H
+#include <linux/i2c-dev.h>
+#else
+#warning "You need to install libi2c-dev and i2c-tools"
+// forcibly defining the ioctl number
+#undef I2C_SLAVE
+#define I2C_SLAVE 0x0703
+#endif
 #include <ssd1306_i2c.h>
+
+#if HAVE_DECL_STRERROR_R
+// do nothing
+#else
+// rewrite it
+#warning "strerror_r is reentrant. strerror is not, so removing usage of strerror_r"
+#define strerror_r(A,B,C) do {} while (0)
+#endif
 
 ssd1306_i2c_t *ssd1306_i2c_open(
         const char *dev, // name of the device such as /dev/i2c-1. cannot be NULL
@@ -448,4 +466,9 @@ int ssd1306_i2c_display_clear(ssd1306_i2c_t *oled)
         fprintf(err_fp, "ERROR: Invalid OLED object. Failed to clear display\n");
         return -1;
     }
+}
+
+const char *ssd1306_i2c_version(void)
+{
+    return PACKAGE_VERSION;
 }
