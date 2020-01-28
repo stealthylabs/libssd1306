@@ -11,13 +11,13 @@ AC_PREREQ([2.69])
 AC_INIT([libssd1306_i2c], [0.1], [github@stealthylabs.com])
 AM_INIT_AUTOMAKE
 AC_CONFIG_SRCDIR([ssd1306_i2c.c])
-#AC_CONFIG_HEADERS([ssd1306_i2c_config.h])
 AM_CONFIG_HEADER(ssd1306_i2c_config.h)
+AC_CONFIG_MACRO_DIRS([m4])
 
 # Checks for programs.
 AC_PROG_CC
-AC_PROG_RANLIB
 AC_PROG_INSTALL
+LT_INIT
 
 # Checks for libraries.
 
@@ -46,7 +46,6 @@ AC_CHECK_FUNCS([memset strdup memcpy calloc ioctl])
 # shared library generation stuff
 AC_ENABLE_SHARED
 AC_DISABLE_STATIC
-LT_INIT
 ## debug test
 AC_MSG_CHECKING([whether to build with debug information])
 AC_ARG_ENABLE([debug],

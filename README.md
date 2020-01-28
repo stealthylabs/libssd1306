@@ -27,9 +27,17 @@ power consumption low on such devices.
 ## BUILD and TEST
 
 ```bash
-$ ./configure && make
+$ ./autogen.sh
+$ ./configure
+$ make
 $ ./test_ssd1306_i2c
 ```
+
+If you want to install this library in a location other than `/usr/local` you
+want to run `configure` with the `--prefix` option.
+
+If you want to build in debug mode, you want to run `configure` with the
+`--enable-debug` option.
 
 
 ## COPYRIGHT
