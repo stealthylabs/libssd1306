@@ -89,7 +89,8 @@ int ssd1306_i2c_display_initialize(ssd1306_i2c_t *oled);
 int ssd1306_i2c_display_clear(ssd1306_i2c_t *oled);
 // get the framebuffer pointers for manipulation. returns -1 on error
 int ssd1306_i2c_display_get_framebuffer(ssd1306_i2c_t *oled, uint8_t **buf, size_t *len);
-// update the display with the framebuffer contents.
+// update the display's GDDRAM with the framebuffer contents. Use the
+// framebuffer pointers to do this
 // this function can be called in an idle loop or on a timer or on-demand
 int ssd1306_i2c_display_update(ssd1306_i2c_t *oled);
 
