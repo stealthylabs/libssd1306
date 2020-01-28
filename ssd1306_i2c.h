@@ -27,8 +27,8 @@ typedef struct {
     uint8_t addr;   // default 0x3c
     uint8_t width; // default 128
     uint8_t height;  // default 64
-    uint8_t *screen_buffer; // buffer for of size height x width byte for writing data on GDRAM
-    size_t screen_buffer_len; // value = (height * width) bits
+    uint8_t *gddram_buffer; // buffer for GDDRAM size (height x width/8) + 1 bytes
+    size_t gddram_buffer_len; // value = (height x width / 8) + 1
     ssd1306_i2c_err_t err; // for re-entrant error handling
 } ssd1306_i2c_t;
 
@@ -72,7 +72,8 @@ typedef enum {
     SSD1306_I2C_CMD_VCOMH_DESELECT, // set VCOMH deselect level
     SSD1306_I2C_CMD_ENABLE_CHARGE_PUMP, // enable charge pump regulator
     SSD1306_I2C_CMD_DISABLE_CHARGE_PUMP, // disable charge pump regulator
-    SSD1306_I2C_CMD_SCROLL_DEACTIVATE
+    SSD1306_I2C_CMD_SCROLL_DEACTIVATE,
+    SSD1306_I2C_CMD_SCROLL_ACTIVATE
 } ssd1306_i2c_cmd_t;
 
 int ssd1306_i2c_run_cmd(ssd1306_i2c_t *oled, // the ssd1306_i2c_t object
@@ -89,6 +90,8 @@ int ssd1306_i2c_display_clear(ssd1306_i2c_t *oled);
 // update the display with the screen_buffer contents.
 // this function can be called in an idle loop or on a timer or on-demand
 int ssd1306_i2c_display_update(ssd1306_i2c_t *oled);
+// get the framebuffer pointers for manipulation. returns -1 on error
+int ssd1306_i2c_get_framebuffer(ssd1306_i2c_t *oled, uint8_t **buf, size_t *len);
 
 #ifdef __cplusplus
 }  // extern "C"
