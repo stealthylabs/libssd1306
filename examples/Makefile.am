@@ -3,5 +3,4 @@ ACLOCAL_AMFLAGS = $(ACLOCAL_FLAGS)
 
 bin_PROGRAMS=test_ssd1306_i2c
 test_ssd1306_i2c_SOURCES=test_ssd1306_i2c.c
-#test_ssd1306_i2c_CFLAGS=-I$(top_srcdir) $(AM_CFLAGS)
-test_ssd1306_i2c_LDADD=$(top_builddir)/src/libssd1306_i2c.la $(AM_LDFLAGS)
+test_ssd1306_i2c_LDADD=$(top_builddir)/src/libssd1306_i2c.la

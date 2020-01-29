@@ -8,7 +8,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.69])
-AC_INIT([libssd1306_i2c], [0.1], [github@stealthylabs.com])
+AC_INIT([libssd1306_i2c], [0.2], [github@stealthylabs.com])
 AM_INIT_AUTOMAKE
 AC_CONFIG_SRCDIR([src/ssd1306_i2c.c])
 AM_CONFIG_HEADER(include/ssd1306_i2c_config.h)
