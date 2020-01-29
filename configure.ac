@@ -10,14 +10,21 @@
 AC_PREREQ([2.69])
 AC_INIT([libssd1306_i2c], [0.1], [github@stealthylabs.com])
 AM_INIT_AUTOMAKE
-AC_CONFIG_SRCDIR([ssd1306_i2c.c])
-AM_CONFIG_HEADER(ssd1306_i2c_config.h)
+AC_CONFIG_SRCDIR([src/ssd1306_i2c.c])
+AM_CONFIG_HEADER(include/ssd1306_i2c_config.h)
 AC_CONFIG_MACRO_DIRS([m4])
 
 # Checks for programs.
+## store user given CFLAGS
+USER_CFLAGS=$CFLAGS
 AC_PROG_CC
 AC_PROG_INSTALL
-LT_INIT
+LT_INIT([disable-static pic-only])
+CFLAGS=$USER_CFLAGS
+
+# shared library generation stuff
+AC_ENABLE_SHARED
+AC_DISABLE_STATIC
 
 # Checks for libraries.
 
@@ -38,14 +45,13 @@ AC_TYPE_UINT8_T
 AC_TYPE_INT8_T
 AC_TYPE_UINTPTR_T
 AC_TYPE_INTPTR_T
+AC_HEADER_STDBOOL
+AC_C_INLINE
 
 # Checks for library functions.
 AC_FUNC_STRERROR_R
 AC_CHECK_FUNCS([memset strdup memcpy calloc ioctl])
 
-# shared library generation stuff
-AC_ENABLE_SHARED
-AC_DISABLE_STATIC
 ## debug test
 AC_MSG_CHECKING([whether to build with debug information])
 AC_ARG_ENABLE([debug],
@@ -53,7 +59,7 @@ AC_ARG_ENABLE([debug],
               [debugit="$enableval"],
               [debugit=no])
 AC_MSG_RESULT([$debugit])
-AM_CFLAGS="-Wall -Wno-uninitialized -fPIC -pedantic -posix -std=c11 -D_DEFAULT_SOURCE -D_REENTRANT"
+AM_CFLAGS="-Wall -Wextra -Wno-uninitialized -fPIC -pedantic -posix -std=c11 -D_DEFAULT_SOURCE -D_REENTRANT"
 
 if test x"$debugit" = x"yes"; then
     AC_DEFINE([DEBUG],[],[Debug Mode])
@@ -72,5 +78,5 @@ fi
 AC_SUBST([AM_CFLAGS])
 AC_SUBST([AM_LDFLAGS])
 
-AC_CONFIG_FILES([Makefile])
+AC_CONFIG_FILES([Makefile src/Makefile examples/Makefile])
 AC_OUTPUT

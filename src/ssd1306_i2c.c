@@ -4,7 +4,7 @@
  * SOFTWARE: libssd1306-i2c
  * LICENSE: Refer license file
  */
-#include "ssd1306_i2c_config.h"
+#include <ssd1306_i2c_config.h>
 #if HAVE_FEATURES_H
 #include <features.h>
 #endif
