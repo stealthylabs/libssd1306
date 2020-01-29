@@ -30,7 +30,7 @@ power consumption low on such devices.
 $ ./autogen.sh
 $ ./configure
 $ make
-$ ./test_ssd1306_i2c
+$ ./examples/test_ssd1306_i2c
 ```
 
 If you want to install this library in a location other than `/usr/local` you
