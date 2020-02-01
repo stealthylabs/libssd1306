@@ -30,7 +30,7 @@ AC_DISABLE_STATIC
 
 # Checks for header files.
 AC_CHECK_HEADERS([ errno.h features.h fcntl.h inttypes.h stdlib.h string.h ])
-AC_CHECK_HEADERS([sys/ioctl.h unistd.h stdio.h linux/i2c-dev.h])
+AC_CHECK_HEADERS([sys/ioctl.h unistd.h stdio.h linux/i2c-dev.h ctype.h])
 
 # Checks for typedefs, structures, and compiler characteristics.
 AC_TYPE_SIZE_T

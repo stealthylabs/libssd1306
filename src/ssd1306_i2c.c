@@ -310,7 +310,7 @@ int ssd1306_i2c_display_initialize(ssd1306_i2c_t *oled)
 {
     int rc = 0;
     uint8_t data;
-    FILE *err_fp = (oled != NULL && oled->err.err_fp != NULL) ? oled->err.err_fp : stderr;
+    FILE *err_fp = SSD1306_I2C_GET_ERRFP(oled);
     if (!oled || oled->fd < 0) {
         fprintf(err_fp, "ERROR: Invalid ssd1306 I2C object\n");
         return -1;
@@ -367,7 +367,7 @@ int ssd1306_i2c_display_initialize(ssd1306_i2c_t *oled)
 
 int ssd1306_i2c_run_cmd(ssd1306_i2c_t *oled, ssd1306_i2c_cmd_t cmd, uint8_t *data, size_t dlen)
 {
-    FILE *err_fp = (oled != NULL && oled->err.err_fp != NULL) ? oled->err.err_fp : stderr;
+    FILE *err_fp = SSD1306_I2C_GET_ERRFP(oled);
     if (!oled || oled->fd < 0) {
         fprintf(err_fp, "ERROR: Invalid ssd1306 I2C object\n");
         return -1;
@@ -413,7 +413,7 @@ int ssd1306_i2c_run_cmd(ssd1306_i2c_t *oled, ssd1306_i2c_cmd_t cmd, uint8_t *dat
 
 int ssd1306_i2c_display_update(ssd1306_i2c_t *oled)
 {
-    FILE *err_fp = (oled != NULL && oled->err.err_fp != NULL) ? oled->err.err_fp : stderr;
+    FILE *err_fp = SSD1306_I2C_GET_ERRFP(oled);
     if (!oled || oled->fd < 0 || !oled->gddram_buffer || oled->gddram_buffer_len == 0) {
         fprintf(err_fp, "ERROR: Invalid ssd1306 I2C object\n");
         return -1;
@@ -450,7 +450,7 @@ int ssd1306_i2c_display_get_framebuffer(ssd1306_i2c_t *oled, uint8_t **obuf, siz
         *olen = oled->gddram_buffer_len - 1;
         return 0;
     } else {
-        FILE *err_fp = (oled != NULL && oled->err.err_fp != NULL) ? oled->err.err_fp : stderr;
+        FILE *err_fp = SSD1306_I2C_GET_ERRFP(oled);
         fprintf(err_fp, "ERROR: Invalid OLED object or input pointers. Failed to return framebuffer\n");
         return -1;
     }
@@ -462,7 +462,7 @@ int ssd1306_i2c_display_clear(ssd1306_i2c_t *oled)
         memset(oled->gddram_buffer, 0, sizeof(uint8_t) * oled->gddram_buffer_len);
         return ssd1306_i2c_display_update(oled);
     } else {
-        FILE *err_fp = (oled != NULL && oled->err.err_fp != NULL) ? oled->err.err_fp : stderr;
+        FILE *err_fp = SSD1306_I2C_GET_ERRFP(oled);
         fprintf(err_fp, "ERROR: Invalid OLED object. Failed to clear display\n");
         return -1;
     }
