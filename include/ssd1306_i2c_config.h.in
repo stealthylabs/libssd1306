@@ -6,6 +6,9 @@
 /* Define to 1 if you have the `calloc' function. */
 #undef HAVE_CALLOC
 
+/* Define to 1 if you have the <ctype.h> header file. */
+#undef HAVE_CTYPE_H
+
 /* Define to 1 if you have the declaration of `strerror_r', and to 0 if you
    don't. */
 #undef HAVE_DECL_STRERROR_R
