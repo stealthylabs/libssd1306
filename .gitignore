@@ -31,3 +31,4 @@ config.sub
 depcomp
 install-sh
 missing
+ltmain.sh
