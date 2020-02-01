@@ -110,12 +110,9 @@ int ssd1306_i2c_framebuffer_hexdump(const ssd1306_i2c_t *oled);
 // default it is '.' if it is not printable or is the number 0.
 // set char onebit to the character that represents the 1 bit. by default it is
 // '|' if it not printable or is the number 0 or 1.
-// set space to either ' ' or 0x20. if it is not a space, or
-// not printable it is assumed to be removed from the printing.
-// set divide to true if you want to divide the dump vertically into two halves
-// for easy viewing. set it to false otherwise
+// set use_space to true if you want a space every byte, or false otherwise.
 int ssd1306_i2c_framebuffer_bitdump(const ssd1306_i2c_t *oled,
-                        char zerobit, char onebit, char space);
+                        char zerobit, char onebit, bool use_space);
 // framebuffer or graphics functions that edit the framebuffer to perform
 // drawing. the user must call the ssd1306_i2c_display_update() function every
 // time they want to update the display on the screen.

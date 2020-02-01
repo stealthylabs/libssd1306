@@ -47,7 +47,7 @@ int ssd1306_i2c_framebuffer_hexdump(const ssd1306_i2c_t *oled)
 }
 
 int ssd1306_i2c_framebuffer_bitdump(const ssd1306_i2c_t *oled,
-            char zerobit, char onebit, char space)
+            char zerobit, char onebit, bool use_space)
 {
     SSD1306_I2C_BAD_PTR_RETURN(oled, -1);
     FILE *err_fp = (oled != NULL && oled->err.err_fp != NULL) ? oled->err.err_fp : stderr;
@@ -71,14 +71,12 @@ int ssd1306_i2c_framebuffer_bitdump(const ssd1306_i2c_t *oled,
                     ch = ((ch >> k) & 0x01) ? onebit : zerobit;
                     fprintf(err_fp, "%c", ch);
                 }
-                if (space == 0x20) {
+                if (use_space) {
                     fprintf(err_fp, "%c", ' ');
                 }
             } else {
-                if (space == 0x20) {
-                    for (int8_t k = 7; k >= 0; k--) {
-                        fprintf(err_fp, "%c", space);
-                    }
+                if (use_space) {
+                    fprintf(err_fp, "        ");// 8 spaces
                 }
             }
         }
@@ -127,7 +125,7 @@ int ssd1306_i2c_framebuffer_draw_pixel(ssd1306_i2c_t *oled, uint8_t x, uint8_t y
     // we do not use xor here since if a pixel is filled, and we fill it again
     // it should stay filled.
     if (clear) {// clear the bit.
-        fb[idx] &= ~ch;
+        fb[idx] &= ((~ch) & 0xFF);
     } else {// fill the bit
         fb[idx] |= ch;
     }
