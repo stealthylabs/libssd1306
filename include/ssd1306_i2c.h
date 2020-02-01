@@ -14,6 +14,8 @@
 extern "C" {
 #endif
 
+const char *ssd1306_i2c_version(void);
+
 typedef struct {
     int errnum; // store the errno here
     char *errstr; // error string, allocated on the heap
@@ -87,14 +89,60 @@ int ssd1306_i2c_run_cmd(ssd1306_i2c_t *oled, // the ssd1306_i2c_t object
 int ssd1306_i2c_display_initialize(ssd1306_i2c_t *oled);
 // clear the display (calls ssd1306_i2c_display_update() internally)
 int ssd1306_i2c_display_clear(ssd1306_i2c_t *oled);
+
 // get the framebuffer pointers for manipulation. returns -1 on error
+// do not call free() on this pointer.
 int ssd1306_i2c_display_get_framebuffer(ssd1306_i2c_t *oled, uint8_t **buf, size_t *len);
 // update the display's GDDRAM with the framebuffer contents. Use the
 // framebuffer pointers to do this
 // this function can be called in an idle loop or on a timer or on-demand
 int ssd1306_i2c_display_update(ssd1306_i2c_t *oled);
 
-const char *ssd1306_i2c_version(void);
+// a debug function to dump the GDDRAM buffer to the FILE * err_fp in the
+// oled->err object. This dumps the data in the widthxheight format so the
+// developer can see how the bits in the RAM are being set 
+// this is called framebuffer_hexdump because this is not the actual GDDRAM dump
+// from the device, but the dump of the data stored in gddram_buffer pointer
+int ssd1306_i2c_framebuffer_hexdump(const ssd1306_i2c_t *oled);
+
+// this dump function dumps the width x height as bits. so that you can really
+// see deeply. set char zerobit to the character that represents the 0 bit. by
+// default it is '.' if it is not printable or is the number 0.
+// set char onebit to the character that represents the 1 bit. by default it is
+// '|' if it not printable or is the number 0 or 1.
+// set space to either ' ' or 0x20. if it is not a space, or
+// not printable it is assumed to be removed from the printing.
+// set divide to true if you want to divide the dump vertically into two halves
+// for easy viewing. set it to false otherwise
+int ssd1306_i2c_framebuffer_bitdump(const ssd1306_i2c_t *oled,
+                        char zerobit, char onebit, char space);
+// framebuffer or graphics functions that edit the framebuffer to perform
+// drawing. the user must call the ssd1306_i2c_display_update() function every
+// time they want to update the display on the screen.
+// this is useful since the user may want to update the framebuffer several
+// times to create a layered image (such as first draw bricks, then draw a
+// person, then clip scenes that are unnecessary) before performing a display
+// update.
+int ssd1306_i2c_framebuffer_draw_bricks(ssd1306_i2c_t *oled);
+
+// the x,y coordinates are based on the screen widthxheight. clear if true means
+// clear the pixel that was in that x,y location. false will draw the pixel
+// since the height and width are uint8_t the x,y are also the same. For a
+// screen size of 128x64, the below diagram should display how to think about
+// pixels and arrangement. Each pixel is a bit in the GDDRAM.
+//  (0,0)   x ---->    (127,0)
+//  y
+//   |
+//   V
+//  (63,0)  x ---->    (127,63)
+//
+int ssd1306_i2c_framebuffer_draw_pixel(ssd1306_i2c_t *oled,
+                uint8_t x, uint8_t y, bool clear);
+
+// helpful macros
+#ifndef SSD1306_I2C_GET_ERRFP
+#define SSD1306_I2C_GET_ERRFP(P) ((P) != NULL && (P)->err.err_fp != NULL) ? (P)->err.err_fp : stderr
+#endif // SSD1306_I2C_GET_ERRFP
 
 #ifdef __cplusplus
 }  // extern "C"
