@@ -13,7 +13,7 @@ This library is for the special use case where you have an application running
 on the Raspberry Pi, Beaglebone Black or any other Linux single board computer
 (SBC) with I<sup>2</sup>C pins available to connect this OLED screen to.
 
-The library provides both the I2C user-land device driver and the graphics
+The library provides both the I<sup>2</sup>C user-land device driver and the graphics
 primitives for the developer to be able to perform display tasks using a single
 library.
 
