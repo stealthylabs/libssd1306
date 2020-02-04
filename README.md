@@ -1,4 +1,4 @@
-# libssd1306-i2c
+# libssd1306
 
 ## INTRODUCTION
 
@@ -13,15 +13,19 @@ This library is for the special use case where you have an application running
 on the Raspberry Pi, Beaglebone Black or any other Linux single board computer
 (SBC) with I<sup>2</sup>C pins available to connect this OLED screen to.
 
-Sometimes you want to integrate this display into a larger code base which is
+The library provides both the I2C user-land device driver and the graphics
+primitives for the developer to be able to perform display tasks using a single
+library.
+
+Sometimes you want to integrate writing to this display into a larger code base which is
 **not** written in Python but needs to run on such devices.
 
 This is why this library is in C, so it can directly execute on the Raspberry Pi
 or similar SBCs where it can be integrated into other applications easily.
 
 Another reason for using this C library is to be able to integrate this display
-with libraries like `libuv` and control the display using events and keeping the
-power consumption low on such devices. 
+with libraries like `libuv` or `libev` or similar event-based libraries,  and control
+the display using events and keeping the power consumption low on such devices.
 
 
 ## BUILD and TEST
