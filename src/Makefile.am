@@ -1,8 +1,9 @@
 AUTOMAKE_OPTIONS = subdir-objects
-ACLOCAL_AMFLAGS = $(ACLOCAL_FLAGS)
+ACLOCAL_AMFLAGS = $(ACLOCAL_FLAGS) 
 
 lib_LTLIBRARIES=libssd1306_i2c.la
 libssd1306_i2c_la_HEADERS=$(top_srcdir)/include/ssd1306_i2c.h
+libssd1306_i2c_la_CFLAGS=$(FREETYPE2_CFLAGS)
 libssd1306_i2c_ladir=$(includedir)
 libssd1306_i2c_la_SOURCES=$(libssd1306_i2c_la_HEADERS) ssd1306_i2c.c graphics.c
-libssd1306_i2c_la_LDFLAGS=-shared -version-info 0:2:0 -L$(top_builddir) -L$(builddir)
+libssd1306_i2c_la_LDFLAGS=-shared -version-info 0:2:0 -L$(top_builddir) -L$(builddir) $(FREETYPE2_LIBS)

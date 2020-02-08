@@ -78,5 +78,30 @@ fi
 AC_SUBST([AM_CFLAGS])
 AC_SUBST([AM_LDFLAGS])
 
+PKG_CHECK_MODULES([FREETYPE2], [freetype2], [AC_DEFINE([HAVE_FREETYPE2], [1], [Use Freetype2])])
+AC_SUBST([FREETYPE2_CFLAGS])
+AC_SUBST([FREETYPE2_LIBS])
+
+AC_ARG_WITH([libuv], AS_HELP_STRING([--with-libuv], [Build examples and applications that use libuv]))
+AS_IF([test "x$with_libuv" = "xyes"], [
+    PKG_CHECK_MODULES([LIBUV], [libuv], [AC_DEFINE([USE_LIBUV], [1], [Use libuv])],
+                      [AC_CHECK_HEADERS([uv.h], [libuv_found_headers=yes])]
+    )
+])
+AM_CONDITIONAL([USE_LIBUV], [test "x$libuv_found_headers" = "xyes"])
+AC_SUBST([LIBUV_CFLAGS])
+AC_SUBST([LIBUV_LIBS])
+
+AC_ARG_WITH([libev], AS_HELP_STRING([--with-libev], [Build examples and applications that use libev]))
+AS_IF([test "x$with_libev" = "xyes"], [
+    PKG_CHECK_MODULES([LIBEV], [libev],
+                      [AC_DEFINE([USE_LIBEV], [1], [Use libev])],
+                      [AC_CHECK_HEADERS([ev.h], [libev_found_headers=yes])]
+                      )
+])
+AM_CONDITIONAL([USE_LIBEV], [test "x$libev_found_headers" = "xyes"])
+AC_SUBST([LIBEV_CFLAGS])
+AC_SUBST([LIBEV_LIBS])
+
 AC_CONFIG_FILES([Makefile src/Makefile examples/Makefile])
 AC_OUTPUT

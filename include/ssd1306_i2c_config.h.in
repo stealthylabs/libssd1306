@@ -19,6 +19,9 @@
 /* Define to 1 if you have the <errno.h> header file. */
 #undef HAVE_ERRNO_H
 
+/* Define to 1 if you have the <ev.h> header file. */
+#undef HAVE_EV_H
+
 /* Define to 1 if you have the <fcntl.h> header file. */
 #undef HAVE_FCNTL_H
 
@@ -85,6 +88,9 @@
 /* Define to 1 if you have the <unistd.h> header file. */
 #undef HAVE_UNISTD_H
 
+/* Define to 1 if you have the <uv.h> header file. */
+#undef HAVE_UV_H
+
 /* Define to 1 if the system has the type `_Bool'. */
 #undef HAVE__BOOL
 
@@ -120,6 +126,12 @@
 
 /* Define to 1 if strerror_r returns char *. */
 #undef STRERROR_R_CHAR_P
+
+/* Use libev */
+#undef USE_LIBEV
+
+/* Use libuv */
+#undef USE_LIBUV
 
 /* Version number of package */
 #undef VERSION

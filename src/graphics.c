@@ -14,6 +14,8 @@
 #include <string.h>
 #include <stdlib.h>
 #include <ctype.h>
+#include <ft2build.h>
+#include FT_FREETYPE_H
 #include <ssd1306_i2c.h>
 
 #ifndef SSD1306_I2C_BAD_PTR_RETURN
