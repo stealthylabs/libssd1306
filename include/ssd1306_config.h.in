@@ -1,4 +1,4 @@
-/* include/ssd1306_i2c_config.h.in.  Generated from configure.ac by autoheader.  */
+/* include/ssd1306_config.h.in.  Generated from configure.ac by autoheader.  */
 
 /* Debug Mode */
 #undef DEBUG
@@ -19,7 +19,7 @@
 /* Define to 1 if you have the <errno.h> header file. */
 #undef HAVE_ERRNO_H
 
-/* Define to 1 if you have the <ev.h> header file. */
+/* Have libev.h */
 #undef HAVE_EV_H
 
 /* Define to 1 if you have the <fcntl.h> header file. */
@@ -27,6 +27,9 @@
 
 /* Define to 1 if you have the <features.h> header file. */
 #undef HAVE_FEATURES_H
+
+/* Use Freetype2 */
+#undef HAVE_FREETYPE2
 
 /* Define to 1 if the system has the type `intptr_t'. */
 #undef HAVE_INTPTR_T
@@ -88,7 +91,7 @@
 /* Define to 1 if you have the <unistd.h> header file. */
 #undef HAVE_UNISTD_H
 
-/* Define to 1 if you have the <uv.h> header file. */
+/* Define to 1 if uv.h is found */
 #undef HAVE_UV_H
 
 /* Define to 1 if the system has the type `_Bool'. */
