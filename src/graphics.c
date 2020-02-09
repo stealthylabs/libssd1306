@@ -16,24 +16,120 @@
 #include <ctype.h>
 #include <ft2build.h>
 #include FT_FREETYPE_H
-#include <ssd1306_i2c.h>
+#include <ssd1306_graphics.h>
 
-#ifndef SSD1306_I2C_BAD_PTR_RETURN
-#define SSD1306_I2C_BAD_PTR_RETURN(P,RC) do { \
-  if (!(P != NULL && P->gddram_buffer != NULL && P->gddram_buffer_len > 0)) { \
+#ifndef SSD1306_FB_BAD_PTR_RETURN
+#define SSD1306_FB_BAD_PTR_RETURN(P,RC) do { \
+  if (!(P != NULL && (P)->buffer != NULL && (P)->len > 0)) { \
     return RC; \
   } \
 } while (0)
-#endif // SSD1306_I2C_BAD_PTR_RETURN
+#endif // SSD1306_FB_BAD_PTR_RETURN
+#ifndef SSD1306_FB_GET_ERRFP
+#define SSD1306_FB_GET_ERRFP(P) ((P) != NULL && (P)->err != NULL && (P)->err->err_fp != NULL) ? (P)->err->err_fp : stderr;
+#endif
 
-int ssd1306_i2c_framebuffer_hexdump(const ssd1306_i2c_t *oled)
+ssd1306_err_t *ssd1306_err_create(FILE *fp)
 {
-    SSD1306_I2C_BAD_PTR_RETURN(oled, -1);
-    FILE *err_fp = SSD1306_I2C_GET_ERRFP(oled);
-    uint8_t * const fb = &(oled->gddram_buffer[1]);
-    size_t fblen = oled->gddram_buffer_len - 1;
-    size_t rows = oled->height;
-    size_t cols = oled->width / 8;
+    if (fp == NULL)
+        fp = stderr;
+    ssd1306_err_t *err = calloc(1, sizeof(ssd1306_err_t));
+    if (!err) {
+        fprintf(fp, "ERROR: Out of memory allocating %zu bytes\n", sizeof(ssd1306_err_t));
+        return NULL;
+    }
+    err->err_fp = fp;
+    err->errnum = 0;
+    err->errlen = 256;
+    err->errbuf = calloc(1, err->errlen);
+    if (!err->errbuf) {
+        fprintf(fp, "ERROR: Failed to allocate memory of size %zu bytes\n",
+                err->errlen);
+        free(err);
+        return NULL;
+    }
+    SSD1306_ATOMIC_ZERO(&(err->_ref));
+    SSD1306_ATOMIC_INCREMENT(&(err->_ref));
+    return err;
+}
+
+void ssd1306_err_destroy(ssd1306_err_t *err)
+{
+    if (err) {
+        int zero = 0;
+        SSD1306_ATOMIC_DECREMENT(&(err->_ref));
+        if (SSD1306_ATOMIC_IS_EQUAL(&(err->_ref), &zero)) {
+            if (err->errbuf) {
+                free(err->errbuf);
+                err->errbuf = NULL;
+            }
+            if (err->err_fp != NULL && err->err_fp != stderr) {
+                fclose(err->err_fp);
+            }
+            memset(err, 0, sizeof(*err));
+            free(err);
+            err = NULL;
+        }
+    }
+}
+
+ssd1306_framebuffer_t *ssd1306_framebuffer_create(uint8_t width, uint8_t height, ssd1306_err_t *err)
+{
+    FILE *err_fp = (err != NULL && err->err_fp != NULL) ? err->err_fp : stderr;
+    if (width == 0 || height == 0) {
+        fprintf(err_fp, "ERROR: Width: %zd Height: %zd cannot be zero\n", width, height);
+        return NULL;
+    }
+    ssd1306_framebuffer_t *fbp = calloc(1, sizeof(ssd1306_framebuffer_t));
+    if (!fbp) {
+        fprintf(err_fp, "ERROR: Failed to allocate memory of size %zu bytes\n", sizeof(*fbp));
+        return NULL;
+    }
+    int rc = 0;
+    do {
+        fbp->width = width;
+        fbp->height = height;
+        fbp->err = err;
+        SSD1306_ERR_REF_INC(err);
+        fbp->len = sizeof(uint8_t) * (fbp->width * fbp->height) / 8;
+        fbp->buffer = calloc(1, fbp->len);
+        if (!fbp->buffer) {
+            fprintf(err_fp, "ERROR: Failed to allocate memory of size %zu bytes\n", fbp->len);
+            fbp->buffer = NULL;
+            rc = -1;
+            break;
+        }
+    } while (0);
+    if (rc < 0) {
+        ssd1306_framebuffer_destroy(fbp);
+        fbp = NULL;
+    }
+    return fbp;
+}
+
+void ssd1306_framebuffer_destroy(ssd1306_framebuffer_t *fbp)
+{
+    if (fbp) {
+        ssd1306_err_destroy(fbp->err);
+        fbp->err = NULL;
+        if (fbp->buffer) {
+            free(fbp->buffer);
+            fbp->buffer = NULL;
+        }
+        memset(fbp, 0, sizeof(*fbp));
+        free(fbp);
+        fbp = NULL;
+    }
+}
+
+int ssd1306_framebuffer_hexdump(const ssd1306_framebuffer_t *fbp)
+{
+    SSD1306_FB_BAD_PTR_RETURN(fbp, -1);
+    FILE *err_fp = SSD1306_FB_GET_ERRFP(fbp);
+    const uint8_t *fb = fbp->buffer;
+    size_t fblen = fbp->len;
+    size_t rows = fbp->height;
+    size_t cols = fbp->width / 8;
     fprintf(err_fp, "DEBUG: No. of rows: %zu cols: %zu\n", rows, cols);
     for (size_t i = 0; i < rows; ++i) {
         fprintf(err_fp, "%04zX ", i);
@@ -48,15 +144,15 @@ int ssd1306_i2c_framebuffer_hexdump(const ssd1306_i2c_t *oled)
     return 0;
 }
 
-int ssd1306_i2c_framebuffer_bitdump(const ssd1306_i2c_t *oled,
+int ssd1306_framebuffer_bitdump(const ssd1306_framebuffer_t *fbp,
             char zerobit, char onebit, bool use_space)
 {
-    SSD1306_I2C_BAD_PTR_RETURN(oled, -1);
-    FILE *err_fp = (oled != NULL && oled->err.err_fp != NULL) ? oled->err.err_fp : stderr;
-    uint8_t * const fb = &(oled->gddram_buffer[1]);
-    size_t fblen = oled->gddram_buffer_len - 1;
-    size_t rows = oled->height;
-    size_t cols = oled->width / 8;
+    SSD1306_FB_BAD_PTR_RETURN(fbp, -1);
+    FILE *err_fp = SSD1306_FB_GET_ERRFP(fbp);
+    const uint8_t *fb = fbp->buffer;
+    size_t fblen = fbp->len;
+    size_t rows = fbp->height;
+    size_t cols = fbp->width / 8;
     if (!isprint(zerobit)) {
         zerobit = '.';
     }
@@ -87,11 +183,18 @@ int ssd1306_i2c_framebuffer_bitdump(const ssd1306_i2c_t *oled,
     return 0;
 }
 
-int ssd1306_i2c_framebuffer_draw_bricks(ssd1306_i2c_t *oled)
+int ssd1306_framebuffer_clear(ssd1306_framebuffer_t *fbp)
 {
-    SSD1306_I2C_BAD_PTR_RETURN(oled, -1);
-    uint8_t * const fb = &(oled->gddram_buffer[1]);
-    size_t fblen = oled->gddram_buffer_len - 1;
+    SSD1306_FB_BAD_PTR_RETURN(fbp, -1);
+    memset(fbp->buffer, 0, fbp->len);
+    return 0;
+}
+
+int ssd1306_framebuffer_draw_bricks(ssd1306_framebuffer_t *fbp)
+{
+    SSD1306_FB_BAD_PTR_RETURN(fbp, -1);
+    uint8_t *fb = fbp->buffer;
+    size_t fblen = fbp->len;
     for (size_t i = 0; i < fblen; ++i) {
         if (i % 1) {
             fb[i] = 0xFF;
@@ -106,20 +209,21 @@ int ssd1306_i2c_framebuffer_draw_bricks(ssd1306_i2c_t *oled)
     return 0;
 }
 
-int ssd1306_i2c_framebuffer_draw_pixel(ssd1306_i2c_t *oled, uint8_t x, uint8_t y, bool clear)
+int ssd1306_framebuffer_draw_pixel(ssd1306_framebuffer_t *fbp, uint8_t x, uint8_t y, bool clear)
 {
-    SSD1306_I2C_BAD_PTR_RETURN(oled, -1);
+    SSD1306_FB_BAD_PTR_RETURN(fbp, -1);
+    uint8_t *fb = fbp->buffer;
+    size_t fblen = fbp->len;
 #if DEBUG
-    FILE *err_fp = SSD1306_I2C_GET_ERRFP(oled);
-    fprintf(err_fp, "DEBUG: w: %zu h: %zu, x: %zu, y: %zu\n", oled->width, oled->height, x, y);
+    FILE *err_fp = SSD1306_FB_GET_ERRFP(fbp);
+    fprintf(err_fp, "DEBUG: w: %zu h: %zu, x: %zu, y: %zu\n", fbp->width, fbp->height, x, y);
 #endif
-    x = x % oled->width; // if x > oled->width, rotate screen
-    y = y % oled->height;// if y > oled->height, rotate
+    x = x % fbp->width; // if x > fbp->width, rotate screen
+    y = y % fbp->height;// if y > fbp->height, rotate
     // find the byte to edit first
     uint8_t bit = x % 8; // the position of the bit right to left
     size_t idx = ((size_t)((x - bit) / 8));
-    idx = idx + (y * (size_t)(oled->width / 8)); // find the correct row
-    uint8_t * const fb = &(oled->gddram_buffer[1]);
+    idx = idx + (y * (size_t)(fbp->width / 8)); // find the correct row
     uint8_t ch = (0x80 >> bit);
 #if DEBUG
     fprintf(err_fp, "DEBUG: idx: %zu ch: %x\n", idx, ch);

@@ -34,6 +34,9 @@ the display using events and keeping the power consumption low on such devices.
 $ ./autogen.sh
 $ ./configure
 $ make
+###  if you want to run all the tests on the attached OLED device on a Raspberry Pi
+$ make check
+### if you just want to run a single test manually
 $ ./examples/test_ssd1306_i2c
 ```
 

@@ -32,3 +32,5 @@ depcomp
 install-sh
 missing
 ltmain.sh
+test-driver
+*.trs
