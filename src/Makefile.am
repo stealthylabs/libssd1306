@@ -6,4 +6,4 @@ libssd1306_i2c_la_HEADERS=$(top_srcdir)/include/ssd1306_i2c.h $(top_srcdir)/incl
 libssd1306_i2c_la_CFLAGS=$(FREETYPE2_CFLAGS)
 libssd1306_i2c_ladir=$(includedir)
 libssd1306_i2c_la_SOURCES=$(libssd1306_i2c_la_HEADERS) ssd1306_i2c.c graphics.c
-libssd1306_i2c_la_LDFLAGS=-shared -version-info 0:2:0 -L$(top_builddir) -L$(builddir) $(FREETYPE2_LIBS)
+libssd1306_i2c_la_LDFLAGS=-shared -version-info 0:3:0 -L$(top_builddir) -L$(builddir) $(FREETYPE2_LIBS)
