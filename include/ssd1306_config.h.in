@@ -85,13 +85,16 @@
 /* Define to 1 if you have the <sys/types.h> header file. */
 #undef HAVE_SYS_TYPES_H
 
+/* Define to 1 if you have <sys/wait.h> that is POSIX.1 compatible. */
+#undef HAVE_SYS_WAIT_H
+
 /* Define to 1 if the system has the type `uintptr_t'. */
 #undef HAVE_UINTPTR_T
 
 /* Define to 1 if you have the <unistd.h> header file. */
 #undef HAVE_UNISTD_H
 
-/* Define to 1 if uv.h is found */
+/* Have uv.h */
 #undef HAVE_UV_H
 
 /* Define to 1 if the system has the type `_Bool'. */
@@ -130,11 +133,8 @@
 /* Define to 1 if strerror_r returns char *. */
 #undef STRERROR_R_CHAR_P
 
-/* Use libev */
-#undef USE_LIBEV
-
-/* Use libuv */
-#undef USE_LIBUV
+/* Define to 1 if you can safely include both <sys/time.h> and <time.h>. */
+#undef TIME_WITH_SYS_TIME
 
 /* Version number of package */
 #undef VERSION
