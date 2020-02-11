@@ -29,6 +29,11 @@
 #define SSD1306_FB_GET_ERRFP(P) ((P) != NULL && (P)->err != NULL && (P)->err->err_fp != NULL) ? (P)->err->err_fp : stderr;
 #endif
 
+const char *ssd1306_fb_version(void)
+{
+    return PACKAGE_VERSION;
+}
+
 ssd1306_err_t *ssd1306_err_create(FILE *fp)
 {
     if (fp == NULL)

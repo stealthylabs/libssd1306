@@ -7,7 +7,6 @@
 *.tmp
 TODO
 todo
-test_ssd1306_i2c
 tags
 TAGS
 autom4te.cache
