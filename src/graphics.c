@@ -149,7 +149,7 @@ int ssd1306_framebuffer_hexdump(const ssd1306_framebuffer_t *fbp)
     return 0;
 }
 
-int ssd1306_framebuffer_bitdump(const ssd1306_framebuffer_t *fbp,
+int ssd1306_framebuffer_bitdump_custom(const ssd1306_framebuffer_t *fbp,
             char zerobit, char onebit, bool use_space)
 {
     SSD1306_FB_BAD_PTR_RETURN(fbp, -1);
@@ -214,12 +214,11 @@ int ssd1306_framebuffer_draw_bricks(ssd1306_framebuffer_t *fbp)
     return 0;
 }
 
-int ssd1306_framebuffer_draw_pixel(ssd1306_framebuffer_t *fbp, uint8_t x, uint8_t y, bool clear)
+int ssd1306_framebuffer_put_pixel(ssd1306_framebuffer_t *fbp, uint8_t x, uint8_t y, bool color)
 {
     SSD1306_FB_BAD_PTR_RETURN(fbp, -1);
     uint8_t *fb = fbp->buffer;
-    size_t fblen = fbp->len;
-#if DEBUG
+#ifdef DEBUG
     FILE *err_fp = SSD1306_FB_GET_ERRFP(fbp);
     fprintf(err_fp, "DEBUG: w: %zu h: %zu, x: %zu, y: %zu\n", fbp->width, fbp->height, x, y);
 #endif
@@ -230,15 +229,40 @@ int ssd1306_framebuffer_draw_pixel(ssd1306_framebuffer_t *fbp, uint8_t x, uint8_
     size_t idx = ((size_t)((x - bit) / 8));
     idx = idx + (y * (size_t)(fbp->width / 8)); // find the correct row
     uint8_t ch = (0x80 >> bit);
-#if DEBUG
-    fprintf(err_fp, "DEBUG: idx: %zu ch: %x\n", idx, ch);
-#endif
     // we do not use xor here since if a pixel is filled, and we fill it again
     // it should stay filled.
-    if (clear) {// clear the bit.
-        fb[idx] &= ((~ch) & 0xFF);
-    } else {// fill the bit
+#ifdef DEBUG
+    uint8_t old_byte = fb[idx];
+#endif
+    if (color) {// color the bit.
         fb[idx] |= ch;
+    } else {// clear the bit
+        fb[idx] &= ((~ch) & 0xFF);
     }
+#ifdef DEBUG
+    fprintf(err_fp, "DEBUG: idx: %zu ch: 0x%x fb[%zu]: Before: 0x%x After: 0x%x\n",
+            idx, ch, idx, old_byte, fb[idx]);
+#endif
     return 0;
+}
+
+int8_t ssd1306_framebuffer_get_pixel(ssd1306_framebuffer_t *fbp, uint8_t x, uint8_t y)
+{
+    SSD1306_FB_BAD_PTR_RETURN(fbp, -1);
+    uint8_t *fb = fbp->buffer;
+#ifdef DEBUG
+    FILE *err_fp = SSD1306_FB_GET_ERRFP(fbp);
+    fprintf(err_fp, "DEBUG: w: %zu h: %zu, x: %zu, y: %zu\n", fbp->width, fbp->height, x, y);
+#endif
+    x = x % fbp->width; // if x > fbp->width, rotate screen
+    y = y % fbp->height;// if y > fbp->height, rotate
+    // find the byte to edit first
+    uint8_t bit = x % 8; // the position of the bit right to left
+    size_t idx = ((size_t)((x - bit) / 8));
+    idx = idx + (y * (size_t)(fbp->width / 8)); // find the correct row
+    int8_t ch = (fb[idx] >> (7 - bit)) & 0x01;
+#ifdef DEBUG
+    fprintf(err_fp, "DEBUG: idx: %zu byte: 0x%x bit: %x\n", idx, fb[idx], ch);
+#endif
+    return ch;
 }

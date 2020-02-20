@@ -28,7 +28,10 @@ int main()
             rc = -1;
             break;
         }
-        ssd1306_framebuffer_bitdump(fbp, 0, 0, true);
+        ssd1306_framebuffer_put_pixel(fbp, 0, 0, true);
+        ssd1306_framebuffer_bitdump(fbp);
+        int8_t pixel = ssd1306_framebuffer_get_pixel(fbp, 0, 0);
+        fprintf(errp->err_fp, "Pixel at [0,0] is %x. Expecting 1\n", pixel);
     } while (0);
     if (fbp)
         ssd1306_framebuffer_destroy(fbp);

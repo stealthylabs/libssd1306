@@ -66,8 +66,9 @@ int ssd1306_framebuffer_hexdump(const ssd1306_framebuffer_t *fbp);
 // set char onebit to the character that represents the 1 bit. by default it is
 // '|' if it not printable or is the number 0 or 1.
 // set use_space to true if you want a space every byte, or false otherwise.
-int ssd1306_framebuffer_bitdump(const ssd1306_framebuffer_t *fbp,
+int ssd1306_framebuffer_bitdump_custom(const ssd1306_framebuffer_t *fbp,
                         char zerobit, char onebit, bool use_space);
+#define ssd1306_framebuffer_bitdump(A) ssd1306_framebuffer_bitdump_custom((A), 0, 0, true)
 // framebuffer or graphics functions that edit the framebuffer to perform
 // drawing. the user must call the ssd1306_i2c_display_update() function every
 // time they want to update the display on the screen.
@@ -77,8 +78,8 @@ int ssd1306_framebuffer_bitdump(const ssd1306_framebuffer_t *fbp,
 // update.
 int ssd1306_framebuffer_draw_bricks(ssd1306_framebuffer_t *fbp);
 
-// the x,y coordinates are based on the screen widthxheight. clear if true means
-// clear the pixel that was in that x,y location. false will draw the pixel
+// the x,y coordinates are based on the screen widthxheight. color if true means
+// color the pixel that was in that x,y location. false will clear the pixel.
 // since the height and width are uint8_t the x,y are also the same. For a
 // screen size of 128x64, the below diagram should display how to think about
 // pixels and arrangement. Each pixel is a bit in the GDDRAM.
@@ -88,8 +89,12 @@ int ssd1306_framebuffer_draw_bricks(ssd1306_framebuffer_t *fbp);
 //   V
 //  (63,0)  x ---->    (127,63)
 //
-int ssd1306_framebuffer_draw_pixel(ssd1306_framebuffer_t *fbp,
-                uint8_t x, uint8_t y, bool clear);
+int ssd1306_framebuffer_put_pixel(ssd1306_framebuffer_t *fbp,
+                uint8_t x, uint8_t y, bool color);
+// returns the value at the pixel. is 0 if pixel is clear, is 1 if the pixel is
+// colored and is -1 if the fbp pointer is bad or the pixel is not found
+int8_t ssd1306_framebuffer_get_pixel(ssd1306_framebuffer_t *fbp,
+                uint8_t x, uint8_t y);
 
 #ifdef __cplusplus
 }  // extern "C"
