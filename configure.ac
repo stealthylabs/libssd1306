@@ -55,6 +55,23 @@ AC_C_INLINE
 AC_FUNC_STRERROR_R
 AC_CHECK_FUNCS([memset strdup memcpy calloc ioctl])
 
+## pthread using m4/ax_pthread.m4
+dnl check for threading support
+AC_ARG_ENABLE([threading],
+              [AS_HELP_STRING([--disable-threading], [disable threading support])],
+              [enable_threading=no],
+              [enable_threading=yes])
+if test x"$enable_threading" = "xyes"; then
+    AC_MSG_NOTICE([checking for pthreads support])
+    AX_PTHREAD([
+                AC_DEFINE([HAVE_PTHREAD], [1], [Undefine this to disable threading support])
+                LIBS="$PTHREAD_LIBS $LIBS"
+                CFLAGS="$CFLAGS $PTHREAD_CFLAGS"
+                CC="$PTHREAD_CC"
+                ], [enable_threading=no])
+fi
+AC_MSG_NOTICE([checking if threading is enabled... ${enable_threading-no}])
+
 ## debug test
 AC_MSG_CHECKING([whether to build with debug information])
 AC_ARG_ENABLE([debug],

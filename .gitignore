@@ -22,7 +22,6 @@ stamp-h1
 configure
 aclocal.m4
 libtool
-m4
 Makefile.in
 compile
 config.guess
