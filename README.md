@@ -30,14 +30,30 @@ the display using events and keeping the power consumption low on such devices.
 
 ## BUILD and TEST
 
+### PRE-REQUISITES
+
+Install Pre-requisties first.
+
+```bash
+$ sudo apt-get -y install libfreetype-dev fonts-freefont-ttf ttf-bitstream-vera
+### optional pre-requisites
+$ sudo apt-get -y install libuv1-dev libev-dev
+```
+
+You may install several other font libraries such as Microsoft fonts which we
+support.
+
+```bash
+### optional Microsoft Fonts installer, if you want it
+$ sudo apt-get -y install ttf-mscorefonts-installer
+```
+
+### COMPILE
+
 ```bash
 $ ./autogen.sh
 $ ./configure
 $ make
-###  if you want to run all the tests on the attached OLED device on a Raspberry Pi
-$ make check
-### if you just want to run a single test manually
-$ ./examples/test_ssd1306_i2c
 ```
 
 If you want to install this library in a location other than `/usr/local` you
@@ -46,6 +62,29 @@ want to run `configure` with the `--prefix` option.
 If you want to build in debug mode, you want to run `configure` with the
 `--enable-debug` option.
 
+If you want to build the `libuv` or `libev` examples, you want to run
+`configure` with the `--with-libuv` or `--with-libev` options.
+
+For example, here is how you would run the `configure` script with all the above
+optional options.
+
+```bash
+$ ./configure --with-libuv --with-libev --enable-debug --prefix=$HOME/local
+```
+
+### TEST
+
+
+```bash
+###  if you want to run all the tests on the attached OLED device on a Raspberry Pi
+$ make check
+
+### if you want to check graphics framebuffer code without any device connected
+$ ./examples/test_graphics
+
+### if you just want to run a single test on a connected SSD1306 I<sup>2</sup>C device  manually
+$ ./examples/test_ssd1306_i2c
+```
 
 ## COPYRIGHT
 

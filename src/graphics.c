@@ -14,8 +14,12 @@
 #include <string.h>
 #include <stdlib.h>
 #include <ctype.h>
+#ifdef HAVE_FREETYPE2
 #include <ft2build.h>
 #include FT_FREETYPE_H
+#else
+#error "Freetype2 required for compiling this file"
+#endif
 #include <ssd1306_graphics.h>
 
 #ifndef SSD1306_FB_BAD_PTR_RETURN
@@ -28,6 +32,80 @@
 #ifndef SSD1306_FB_GET_ERRFP
 #define SSD1306_FB_GET_ERRFP(P) ((P) != NULL && (P)->err != NULL && (P)->err->err_fp != NULL) ? (P)->err->err_fp : stderr;
 #endif
+#ifndef SSD1306_ERR_GET_ERRFP
+#define SSD1306_ERR_GET_ERRFP(P) ((P) != NULL && (P)->err_fp != NULL) ? (P)->err_fp : stderr;
+#endif
+
+#ifdef HAVE_PTHREAD
+    #include <pthread.h>
+    typedef pthread_mutex_t ssd1306_lock_t;
+    #define SSD1306_LOCK(A) pthread_mutex_lock((A))
+    #define SSD1306_UNLOCK(A) pthread_mutex_unlock((A))
+    #define SSD1306_LOCK_DESTROY(A) pthread_mutex_destroy((A))
+    #define SSD1306_LOCK_CREATE(A,B) \
+    do { \
+        pthread_mutexattr_t mattr;\
+        pthread_mutexattr_init(&mattr);\
+        if ((B)) \
+            pthread_mutexattr_settype(&mattr, PTHREAD_MUTEX_RECURSIVE); \
+        pthread_mutex_init((A), &mattr);\
+        pthread_mutexattr_destroy(&mattr); \
+    } while (0)
+#else
+    typedef void * ssd1306_lock_t;
+    #define SSD1306_LOCK(A) do{} while(0)
+    #define SSD1306_UNLOCK(A) do{} while(0)
+    #define SSD1306_LOCK_DESTROY(A) do{} while(0)
+    #define SSD1306_LOCK_CREATE(A,B) do{} while(0)
+#endif
+
+struct ssd1306_font_ {
+    FT_Library lib;
+    ssd1306_lock_t _lock;
+};
+
+static void ssd1306_font_destroy(ssd1306_font_t *font, ssd1306_err_t *err);
+
+static ssd1306_font_t *ssd1306_font_create(ssd1306_err_t *err)
+{
+    FILE *err_fp = SSD1306_ERR_GET_ERRFP(err);
+    ssd1306_font_t *font = calloc(1, sizeof(ssd1306_font_t));
+    if (font) {
+        SSD1306_LOCK_CREATE(&(font->_lock), true);// allow recursive lock
+        FT_Error ferr = FT_Init_FreeType(&(font->lib));
+        if (ferr) {
+            fprintf(err_fp, "ERROR: Freetype FT_Init_FreeType() error: %d\n", ferr);
+            font->lib = NULL;
+            ssd1306_font_destroy(font, err);
+            font = NULL;
+        }
+        return font;
+    } else {
+        fprintf(err_fp, "ERROR: Out of memory allocating %zu bytes\n", sizeof(ssd1306_font_t));
+        return NULL;
+    }
+}
+
+static void ssd1306_font_destroy(ssd1306_font_t *font, ssd1306_err_t *err)
+{
+    if (font) {
+        if (font->lib) {
+            SSD1306_LOCK(&(font->_lock));
+            // cleanup
+            FT_Error ferr = FT_Done_FreeType(font->lib);
+            if (ferr) {
+                FILE *err_fp = SSD1306_ERR_GET_ERRFP(err);   
+                fprintf(err_fp, "WARN: Freetype FT_Done_FreeType() error: %d\n", ferr);
+            }
+            font->lib = NULL;
+            SSD1306_UNLOCK(&(font->_lock));
+        }
+        SSD1306_LOCK_DESTROY(&(font->_lock));
+        memset(font, 0, sizeof(*font));
+        free(font);
+        font = NULL;
+    }
+}
 
 const char *ssd1306_fb_version(void)
 {
@@ -80,7 +158,7 @@ void ssd1306_err_destroy(ssd1306_err_t *err)
 
 ssd1306_framebuffer_t *ssd1306_framebuffer_create(uint8_t width, uint8_t height, ssd1306_err_t *err)
 {
-    FILE *err_fp = (err != NULL && err->err_fp != NULL) ? err->err_fp : stderr;
+    FILE *err_fp = SSD1306_ERR_GET_ERRFP(err);
     if (width == 0 || height == 0) {
         fprintf(err_fp, "ERROR: Width: %zd Height: %zd cannot be zero\n", width, height);
         return NULL;

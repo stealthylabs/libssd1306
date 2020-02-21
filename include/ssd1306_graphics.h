@@ -34,12 +34,15 @@ ssd1306_err_t *ssd1306_err_create(FILE *fp); // if fp is NULL, stderr is used
 void ssd1306_err_destroy(ssd1306_err_t *err);
 #define SSD1306_ERR_REF_INC(A) if ((A) != NULL) SSD1306_ATOMIC_INCREMENT(&((A)->_ref))
 
+typedef struct ssd1306_font_ ssd1306_font_t;
+
 typedef struct {
     uint8_t width; // width of the framebuffer
     uint8_t height; // height of the framebuffer
     uint8_t *buffer; // buffer pointer
     size_t len; // length of the buffer
     ssd1306_err_t *err; // pointer to an optional error object
+    ssd1306_font_t *font; // pointer to an opaque font library implementation - default is freetype
 } ssd1306_framebuffer_t;
 
 // ssd1306 has 1:1 correspondence between pixel to bit
