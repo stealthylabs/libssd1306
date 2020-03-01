@@ -17,6 +17,20 @@
 #ifdef HAVE_FREETYPE2
 #include <ft2build.h>
 #include FT_FREETYPE_H
+
+// old versions did not have this
+#ifndef FT_Error_String
+static const char *FT_Error_String(FT_Error err)
+{
+    #undef __FTERRORS_H__
+    #define FT_ERRORDEF( e, v, s )  case e: return s;
+    #define FT_ERROR_START_LIST     switch (err) {
+    #define FT_ERROR_END_LIST       }
+    #include FT_ERRORS_H
+    return "(Unknown error)";
+}
+#endif
+
 #else
 #error "Freetype2 required for compiling this file"
 #endif
@@ -162,11 +176,11 @@ static void ssd1306_font_destroy(ssd1306_font_t *font, ssd1306_err_t *err)
     }
 }
 
-static ssize_t ssd1306_font_render_string(ssd1306_font_t *font, ssd1306_err_t *err, 
-        ssd1306_fontface_t font_idx, uint8_t font_size, const char *str, size_t slen, 
+static ssize_t ssd1306_font_render_string(ssd1306_font_t *font, ssd1306_err_t *err,
+        ssd1306_fontface_t font_idx, uint8_t font_size, const char *str, size_t slen,
         uint16_t x, uint16_t y, ssd1306_framebuffer_t *fbp)
 {
-    FILE *err_fp = SSD1306_ERR_GET_ERRFP(err);   
+    FILE *err_fp = SSD1306_ERR_GET_ERRFP(err);
     if (font && font_idx < SSD1306_FONT_MAX && fbp && str && slen > 0) {
         ssize_t rc = 0;
         SSD1306_LOCK(&(font->_lock));
@@ -232,7 +246,7 @@ static ssize_t ssd1306_font_render_string(ssd1306_font_t *font, ssd1306_err_t *e
                 rc = (ssize_t)slen;
             } else {
                 fprintf(err_fp, "ERROR: Font %s does not have a face pointer\n",
-                        ssd1306_fontface_names[font_idx]); 
+                        ssd1306_fontface_names[font_idx]);
                 rc = -1;
                 break;
             }
