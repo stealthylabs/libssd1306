@@ -19,7 +19,7 @@
 #include FT_FREETYPE_H
 
 // old versions did not have this
-#ifndef FT_Error_String
+#if (FREETYPE_MAJOR == 2 && FREETYPE_MINOR < 10)
 static const char *FT_Error_String(FT_Error err)
 {
     #undef __FTERRORS_H__
