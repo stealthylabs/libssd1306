@@ -59,8 +59,32 @@
     #define SSD1306_LOCK_CREATE(A,B) do{} while(0)
 #endif
 
+static const char *ssd1306_fontface_paths[SSD1306_FONT_MAX + 1] = {
+    "/usr/share/fonts/truetype/freefont/FreeMono.ttf",
+    "/usr/share/fonts/truetype/freefont/FreeMonoBold.ttf",
+    "/usr/share/fonts/truetype/freefont/FreeMonoOblique.ttf",
+    "/usr/share/fonts/truetype/freefont/FreeMonoBoldOblique.ttf",
+    "/usr/share/fonts/truetype/ttf-bitstream-vera/Vera.ttf",
+    "/usr/share/fonts/truetype/ttf-bitstream-vera/VeraBd.ttf",
+    "/usr/share/fonts/truetype/ttf-bitstream-vera/VeraIt.ttf",
+    "/usr/share/fonts/truetype/ttf-bitstream-vera/VeraBI.ttf",
+    NULL
+};
+static const char *ssd1306_fontface_names[SSD1306_FONT_MAX + 1] = {
+    "SSD1306_FONT_VERA",
+    "SSD1306_FONT_VERA_BOLD",
+    "SSD1306_FONT_VERA_ITALIC",
+    "SSD1306_FONT_VERA_BOLDITALIC",
+    "SSD1306_FONT_FREEMONO",
+    "SSD1306_FONT_FREEMONO_BOLD",
+    "SSD1306_FONT_FREEMONO_ITALIC",
+    "SSD1306_FONT_FREEMONO_BOLDITALIC",
+    "SSD1306_FONT_MAX"
+};
+
 struct ssd1306_font_ {
     FT_Library lib;
+    FT_Face faces[SSD1306_FONT_MAX];
     ssd1306_lock_t _lock;
 };
 
@@ -72,10 +96,29 @@ static ssd1306_font_t *ssd1306_font_create(ssd1306_err_t *err)
     ssd1306_font_t *font = calloc(1, sizeof(ssd1306_font_t));
     if (font) {
         SSD1306_LOCK_CREATE(&(font->_lock), true);// allow recursive lock
-        FT_Error ferr = FT_Init_FreeType(&(font->lib));
-        if (ferr) {
-            fprintf(err_fp, "ERROR: Freetype FT_Init_FreeType() error: %d\n", ferr);
-            font->lib = NULL;
+        FT_Error ferr = 0;
+        do {
+            ferr = FT_Init_FreeType(&(font->lib));
+            if (ferr) {
+                fprintf(err_fp, "ERROR: Freetype FT_Init_FreeType() error: %d (%s)\n", ferr, FT_Error_String(ferr));
+                font->lib = NULL;
+                break;
+            }
+            for (uint32_t idx = SSD1306_FONT_DEFAULT; idx < SSD1306_FONT_MAX; ++idx) {
+                font->faces[idx] = NULL;
+                ferr = FT_New_Face(font->lib, ssd1306_fontface_paths[idx], 0,
+                                    &(font->faces[idx]));
+                if (ferr) {
+                    fprintf(err_fp, "ERROR: FreeType FT_New_Face(%s => %s) error: %d (%s)\n",
+                            ssd1306_fontface_names[idx], ssd1306_fontface_paths[idx],
+                            ferr, FT_Error_String(ferr));
+                    break;
+                }
+            }
+            if (ferr)
+                break;
+        } while (0);
+        if (ferr != 0) {
             ssd1306_font_destroy(font, err);
             font = NULL;
         }
@@ -89,13 +132,25 @@ static ssd1306_font_t *ssd1306_font_create(ssd1306_err_t *err)
 static void ssd1306_font_destroy(ssd1306_font_t *font, ssd1306_err_t *err)
 {
     if (font) {
+        FILE *err_fp = SSD1306_ERR_GET_ERRFP(err);
         if (font->lib) {
             SSD1306_LOCK(&(font->_lock));
+            FT_Error ferr = 0;
+            for (uint32_t idx = 0; idx < SSD1306_FONT_MAX; ++idx) {
+                if (font->faces[idx]) {
+                    ferr = FT_Done_Face(font->faces[idx]);
+                    if (ferr) {
+                        fprintf(err_fp, "WARN: Freetype FT_Done_Face(%s) error: %d (%s)\n",
+                                ssd1306_fontface_paths[idx], ferr, FT_Error_String(ferr));
+                    }
+                    font->faces[idx] = NULL;
+                }
+            }
             // cleanup
-            FT_Error ferr = FT_Done_FreeType(font->lib);
+            ferr = FT_Done_FreeType(font->lib);
             if (ferr) {
-                FILE *err_fp = SSD1306_ERR_GET_ERRFP(err);   
-                fprintf(err_fp, "WARN: Freetype FT_Done_FreeType() error: %d\n", ferr);
+                fprintf(err_fp, "WARN: Freetype FT_Done_FreeType() error: %d (%s)\n",
+                        ferr, FT_Error_String(ferr));
             }
             font->lib = NULL;
             SSD1306_UNLOCK(&(font->_lock));
@@ -105,6 +160,89 @@ static void ssd1306_font_destroy(ssd1306_font_t *font, ssd1306_err_t *err)
         free(font);
         font = NULL;
     }
+}
+
+static ssize_t ssd1306_font_render_string(ssd1306_font_t *font, ssd1306_err_t *err, 
+        ssd1306_fontface_t font_idx, uint8_t font_size, const char *str, size_t slen, 
+        uint16_t x, uint16_t y, ssd1306_framebuffer_t *fbp)
+{
+    FILE *err_fp = SSD1306_ERR_GET_ERRFP(err);   
+    if (font && font_idx < SSD1306_FONT_MAX && fbp && str && slen > 0) {
+        ssize_t rc = 0;
+        SSD1306_LOCK(&(font->_lock));
+        do {
+            FT_Face face = font->faces[font_idx];
+            if (face) {
+                FT_GlyphSlot slot = face->glyph;
+                FT_Vector pen;
+                pen.x = x;
+                pen.y = y;
+                FT_Error ferr;
+                ferr = FT_Set_Char_Size(face, 0, font_size * 64, 300, 300);
+                if (ferr) {
+                    fprintf(err_fp, "ERROR: FreeType FT_Set_Char_Size(%s, %d) error: %d (%s)\n",
+                            ssd1306_fontface_paths[font_idx], font_size, ferr, FT_Error_String(ferr));
+                    rc = -1;
+                    break;
+                }
+                for (size_t idx = 0; idx < slen; ++idx) {
+                    FT_Set_Transform(face, NULL, &pen);
+                    // these are the same
+                    if (0) {
+                        FT_UInt glyph_idx = FT_Get_Char_Index(face, str[idx]);
+                        ferr = FT_Load_Glyph(face, glyph_idx, FT_LOAD_DEFAULT);
+                        if (ferr) {
+                            fprintf(err_fp, "WARN: Freetype FT_Load_Glyph() error: %d (%s)\n",
+                                    ferr, FT_Error_String(ferr));
+                            continue; // ignore error
+                        }
+                        ferr = FT_Render_Glyph(face->glyph, FT_RENDER_MODE_NORMAL);
+                        if (ferr) {
+                            fprintf(err_fp, "WARN: Freetype FT_Render_Glyph() error: %d (%s)\n",
+                                    ferr, FT_Error_String(ferr));
+                            continue; // ignore error
+                        }
+                    } else {
+                        ferr = FT_Load_Char(face, str[idx], FT_LOAD_RENDER);
+                        if (ferr) {
+                            fprintf(err_fp, "WARN: Freetype FT_Load_Char(%c) error: %d (%s)\n",
+                                    str[idx], ferr, FT_Error_String(ferr));
+                            continue; // ignore error
+                        }
+                    }
+                    //draw bitmap
+                    FT_Bitmap *bmap = &slot->bitmap;
+                    FT_Int x_bmap = slot->bitmap_left;
+                    FT_Int y_bmap = fbp->height - slot->bitmap_top;
+                    FT_Int xmax_bmap = x_bmap + bmap->width;
+                    FT_Int ymax_bmap = y_bmap + bmap->rows;
+                    for (FT_Int i = x_bmap, p = 0; i < xmax_bmap; ++i, ++p) {
+                        for (FT_Int j = y_bmap, q = 0; j < ymax_bmap; ++j, ++q) {
+                            if (i < 0 || j < 0 || i >= fbp->width || j >= fbp->height)
+                                continue;
+                            ssd1306_framebuffer_put_pixel(fbp, (uint8_t)(i & 0xFF),
+                                    (uint8_t)(j & 0xFF),
+                                    bmap->buffer[q * bmap->width + p]);
+                        }
+                    }
+                    // advance position
+                    pen.x += slot->advance.x;
+                    pen.y += slot->advance.y;
+                }
+                rc = (ssize_t)slen;
+            } else {
+                fprintf(err_fp, "ERROR: Font %s does not have a face pointer\n",
+                        ssd1306_fontface_names[font_idx]); 
+                rc = -1;
+                break;
+            }
+        } while (0);
+        SSD1306_UNLOCK(&(font->_lock));
+        return rc;
+    } else {
+        fprintf(err_fp, "ERROR: Invalid font inputs given\n");
+    }
+    return -1;
 }
 
 const char *ssd1306_fb_version(void)
@@ -182,6 +320,12 @@ ssd1306_framebuffer_t *ssd1306_framebuffer_create(uint8_t width, uint8_t height,
             rc = -1;
             break;
         }
+        fbp->font = ssd1306_font_create(fbp->err);
+        if (!fbp->font) {
+            fprintf(err_fp, "ERROR: Failed to create font object, exiting\n");
+            rc = -1;
+            break;
+        }
     } while (0);
     if (rc < 0) {
         ssd1306_framebuffer_destroy(fbp);
@@ -193,6 +337,10 @@ ssd1306_framebuffer_t *ssd1306_framebuffer_create(uint8_t width, uint8_t height,
 void ssd1306_framebuffer_destroy(ssd1306_framebuffer_t *fbp)
 {
     if (fbp) {
+        if (fbp->font) {
+            ssd1306_font_destroy(fbp->font, fbp->err);
+            fbp->font = NULL;
+        }
         ssd1306_err_destroy(fbp->err);
         fbp->err = NULL;
         if (fbp->buffer) {
@@ -343,4 +491,18 @@ int8_t ssd1306_framebuffer_get_pixel(ssd1306_framebuffer_t *fbp, uint8_t x, uint
     fprintf(err_fp, "DEBUG: idx: %zu byte: 0x%x bit: %x\n", idx, fb[idx], ch);
 #endif
     return ch;
+}
+
+ssize_t ssd1306_framebuffer_draw_text(ssd1306_framebuffer_t *fbp,
+                uint8_t x, uint8_t y, ssd1306_fontface_t fontface,
+                uint8_t font_size, const char *str, size_t slen)
+{
+    if (fbp && str) {
+        if (slen == 0) {
+            slen = strlen(str);
+        }
+        return ssd1306_font_render_string(fbp->font, fbp->err, fontface,
+                font_size, str, slen, (uint16_t)x, (uint16_t)y, fbp);
+    }
+    return -1;
 }

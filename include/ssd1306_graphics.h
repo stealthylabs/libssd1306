@@ -36,6 +36,21 @@ void ssd1306_err_destroy(ssd1306_err_t *err);
 
 typedef struct ssd1306_font_ ssd1306_font_t;
 
+typedef enum { // the paths shown here are on Debian-based systems
+    // bitstream-vera
+    SSD1306_FONT_VERA = 0,          // /usr/share/fonts/truetype/ttf-bitstream-vera/Vera.ttf
+#define SSD1306_FONT_DEFAULT SSD1306_FONT_VERA
+    SSD1306_FONT_VERA_BOLD,         // /usr/share/fonts/truetype/ttf-bitstream-vera/VeraBd.ttf
+    SSD1306_FONT_VERA_ITALIC,       // /usr/share/fonts/truetype/ttf-bitstream-vera/VeraIt.ttf
+    SSD1306_FONT_VERA_BOLDITALIC,   // /usr/share/fonts/truetype/ttf-bitstream-vera/VeraBI.ttf
+    // freefont Mono
+    SSD1306_FONT_FREEMONO,           // /usr/share/fonts/truetype/freefont/FreeMono.ttf
+    SSD1306_FONT_FREEMONO_BOLD,      // /usr/share/fonts/truetype/freefont/FreeMonoBold.ttf
+    SSD1306_FONT_FREEMONO_ITALIC,    // /usr/share/fonts/truetype/freefont/FreeMonoOblique.ttf
+    SSD1306_FONT_FREEMONO_BOLDITALIC,// /usr/share/fonts/truetype/freefont/FreeMonoBoldOblique.ttf
+    SSD1306_FONT_MAX                 // internal use for error checking
+} ssd1306_fontface_t;
+
 typedef struct {
     uint8_t width; // width of the framebuffer
     uint8_t height; // height of the framebuffer
@@ -98,6 +113,13 @@ int ssd1306_framebuffer_put_pixel(ssd1306_framebuffer_t *fbp,
 // colored and is -1 if the fbp pointer is bad or the pixel is not found
 int8_t ssd1306_framebuffer_get_pixel(ssd1306_framebuffer_t *fbp,
                 uint8_t x, uint8_t y);
+
+// returns the number of bytes written to screen, i.e. slen if successful
+// returns 0 if nothing is written to screen
+// returns -1 if error occurred loading fonts or anything else
+ssize_t ssd1306_framebuffer_draw_text(ssd1306_framebuffer_t *fbp,
+                uint8_t x, uint8_t y, ssd1306_fontface_t fontface,
+                uint8_t font_size, const char *str, size_t slen);
 
 #ifdef __cplusplus
 }  // extern "C"
