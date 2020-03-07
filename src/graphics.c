@@ -327,6 +327,7 @@ ssd1306_framebuffer_t *ssd1306_framebuffer_create(uint8_t width, uint8_t height,
         fbp->err = err;
         SSD1306_ERR_REF_INC(err);
         fbp->len = sizeof(uint8_t) * (fbp->width * fbp->height) / 8;
+        fbp->len = sizeof(uint8_t) * (fbp->width * fbp->height) / 8;
         fbp->buffer = calloc(1, fbp->len);
         if (!fbp->buffer) {
             fprintf(err_fp, "ERROR: Failed to allocate memory of size %zu bytes\n", fbp->len);
@@ -373,18 +374,21 @@ int ssd1306_framebuffer_hexdump(const ssd1306_framebuffer_t *fbp)
     FILE *err_fp = SSD1306_FB_GET_ERRFP(fbp);
     const uint8_t *fb = fbp->buffer;
     size_t fblen = fbp->len;
-    size_t rows = fbp->height;
-    size_t cols = fbp->width / 8;
-    fprintf(err_fp, "DEBUG: No. of rows: %zu cols: %zu\n", rows, cols);
-    for (size_t i = 0; i < rows; ++i) {
-        fprintf(err_fp, "%04zX ", i);
-        for (size_t j = 0; j < cols; ++j) {
-            if ((i * cols + j) < fblen)
-                fprintf(err_fp, "%02X ", fb[i * cols + j]);
-            else
-                fprintf(err_fp, "   ");
+    for (size_t y = 0; y < fbp->height; ++y) {
+        fprintf(err_fp, "%04zX ", y);
+        uint8_t bit = 0;
+        uint8_t z = 0;
+        for (size_t x = 0; x < fbp->width; ++x) {
+            char ch = fb[x + (y / 8) * fbp->width] & (1 << (y & 7));
+            if (ch) { // fill the correct bit
+                z |= (1 << (bit & 7));
+            }
+            if (bit % 8 == 7) {
+                fprintf(err_fp, "%02X ", z);
+            }
+            bit++;
         }
-        fprintf(err_fp, " \n");
+        fprintf(err_fp, "\n");
     }
     return 0;
 }
@@ -396,31 +400,19 @@ int ssd1306_framebuffer_bitdump_custom(const ssd1306_framebuffer_t *fbp,
     FILE *err_fp = SSD1306_FB_GET_ERRFP(fbp);
     const uint8_t *fb = fbp->buffer;
     size_t fblen = fbp->len;
-    size_t rows = fbp->height;
-    size_t cols = fbp->width / 8;
     if (!isprint(zerobit)) {
         zerobit = '.';
     }
     if (!isprint(onebit)) {
         onebit = '|';
     }
-    fprintf(err_fp, "DEBUG: No. of cols: %zu rows: %zu\n", cols, rows);
-    for (size_t i = 0; i < rows; ++i) {
-        fprintf(err_fp, "%04zX ", i);
-        for (size_t j = 0; j < cols; ++j) {
-            if ((i * cols + j) < fblen) {
-                for (int8_t k = 7; k >= 0; k--) {
-                    uint8_t ch = fb[i * cols + j];
-                    ch = ((ch >> k) & 0x01) ? onebit : zerobit;
-                    fprintf(err_fp, "%c", ch);
-                }
-                if (use_space) {
-                    fprintf(err_fp, "%c", ' ');
-                }
-            } else {
-                if (use_space) {
-                    fprintf(err_fp, "        ");// 8 spaces
-                }
+    for (size_t y = 0; y < fbp->height; ++y) {
+        fprintf(err_fp, "%04zX ", y);
+        for (size_t x = 0; x < fbp->width; ++x) {
+            char ch = (fb[x + (y / 8) * fbp->width] & (1 << (y & 7))) ? onebit : zerobit;
+            fprintf(err_fp, "%c", ch);
+            if (x % 8 == 7 && use_space) {
+                fprintf(err_fp, "%c", ' ');
             }
         }
         fprintf(err_fp, "\n");
@@ -458,31 +450,21 @@ int ssd1306_framebuffer_put_pixel(ssd1306_framebuffer_t *fbp, uint8_t x, uint8_t
 {
     SSD1306_FB_BAD_PTR_RETURN(fbp, -1);
     uint8_t *fb = fbp->buffer;
-#ifdef DEBUG
-    FILE *err_fp = SSD1306_FB_GET_ERRFP(fbp);
-    fprintf(err_fp, "DEBUG: w: %zu h: %zu, x: %zu, y: %zu\n", fbp->width, fbp->height, x, y);
-#endif
-    x = x % fbp->width; // if x > fbp->width, rotate screen
-    y = y % fbp->height;// if y > fbp->height, rotate
-    // find the byte to edit first
-    uint8_t bit = x % 8; // the position of the bit right to left
-    size_t idx = ((size_t)((x - bit) / 8));
-    idx = idx + (y * (size_t)(fbp->width / 8)); // find the correct row
-    uint8_t ch = (0x80 >> bit);
-    // we do not use xor here since if a pixel is filled, and we fill it again
-    // it should stay filled.
-#ifdef DEBUG
-    uint8_t old_byte = fb[idx];
-#endif
-    if (color) {// color the bit.
-        fb[idx] |= ch;
-    } else {// clear the bit
-        fb[idx] &= ((~ch) & 0xFF);
+    uint8_t w = fbp->width;
+    uint8_t h = fbp->height;
+    // based on the page arrangement in GDDRAM as per the datasheet
+    if (x >= 0 && x < w && y >= 0 && y < h) {
+        // this allows rotation!!
+    //    x = w - x - 1;
+    //    y = h - y - 1;
+    } else {
+        return -1;
     }
-#ifdef DEBUG
-    fprintf(err_fp, "DEBUG: idx: %zu ch: 0x%x fb[%zu]: Before: 0x%x After: 0x%x\n",
-            idx, ch, idx, old_byte, fb[idx]);
-#endif
+    if (color) {
+        fb[x + (y / 8) * w] |= (1 << (y & 7));
+    } else {
+        fb[x + (y / 8) * w] &= ~(1 << (y & 7));
+    }
     return 0;
 }
 
@@ -490,21 +472,14 @@ int8_t ssd1306_framebuffer_get_pixel(ssd1306_framebuffer_t *fbp, uint8_t x, uint
 {
     SSD1306_FB_BAD_PTR_RETURN(fbp, -1);
     uint8_t *fb = fbp->buffer;
-#ifdef DEBUG
-    FILE *err_fp = SSD1306_FB_GET_ERRFP(fbp);
-    fprintf(err_fp, "DEBUG: w: %zu h: %zu, x: %zu, y: %zu\n", fbp->width, fbp->height, x, y);
-#endif
-    x = x % fbp->width; // if x > fbp->width, rotate screen
-    y = y % fbp->height;// if y > fbp->height, rotate
-    // find the byte to edit first
-    uint8_t bit = x % 8; // the position of the bit right to left
-    size_t idx = ((size_t)((x - bit) / 8));
-    idx = idx + (y * (size_t)(fbp->width / 8)); // find the correct row
-    int8_t ch = (fb[idx] >> (7 - bit)) & 0x01;
-#ifdef DEBUG
-    fprintf(err_fp, "DEBUG: idx: %zu byte: 0x%x bit: %x\n", idx, fb[idx], ch);
-#endif
-    return ch;
+    uint8_t w = fbp->width;
+    uint8_t h = fbp->height;
+    if (x >= 0 && x < w && y >= 0 && y < h) {
+    //    x = w - x - 1;
+    //    y = h - y - 1;
+        return fb[x + (y / 8) * w] & (1 << (y & 7));
+    }
+    return -1;
 }
 
 ssize_t ssd1306_framebuffer_draw_text(ssd1306_framebuffer_t *fbp,
