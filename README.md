@@ -80,10 +80,10 @@ $ ./configure --with-libuv --with-libev --enable-debug --prefix=$HOME/local
 $ make check
 
 ### if you want to check graphics framebuffer code without any device connected
-$ ./examples/test_graphics
+$ ./examples/test_fb_graphics
 
 ### if you just want to run a single test on a connected SSD1306 I<sup>2</sup>C device  manually
-$ ./examples/test_ssd1306_i2c
+$ ./examples/test_i2c_128x132
 ```
 
 ## COPYRIGHT
