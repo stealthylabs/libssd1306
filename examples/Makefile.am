@@ -1,11 +1,13 @@
 AUTOMAKE_OPTIONS = subdir-objects
 ACLOCAL_AMFLAGS = $(ACLOCAL_FLAGS)
 
-noinst_PROGRAMS=test_ssd1306_i2c test_graphics
+noinst_PROGRAMS=test_i2c_128x32 test_fb_graphics
 TESTS=$(noinst_PROGRAMS)
 
-test_ssd1306_i2c_SOURCES=test_ssd1306_i2c.c
-test_ssd1306_i2c_LDADD=$(top_builddir)/src/libssd1306_i2c.la
+SSD1306_LIB=$(top_builddir)/src/libssd1306_i2c.la
 
-test_graphics_SOURCES=test_graphics.c
-test_graphics_LDADD=$(top_builddir)/src/libssd1306_i2c.la
+test_i2c_128x32_SOURCES=i2c_128x32_graphics.c
+test_i2c_128x32_LDADD=$(SSD1306_LIB)
+
+test_fb_graphics_SOURCES=fb_graphics.c
+test_fb_graphics_LDADD=$(SSD1306_LIB)
