@@ -30,7 +30,7 @@ int main ()
     }
     ssd1306_framebuffer_hexdump(fbp);
     ssd1306_framebuffer_bitdump(fbp);
-    ssd1306_framebuffer_draw_text(fbp, 32, 32, SSD1306_FONT_DEFAULT, 4, "ABCDeF", 0);
+    ssd1306_framebuffer_draw_text(fbp, "ABCDeF", 0, 32, 32, SSD1306_FONT_DEFAULT, 4);
     ssd1306_i2c_display_update(oled, fbp);
     sleep(3);;
     ssd1306_i2c_run_cmd(oled, SSD1306_I2C_CMD_DISP_INVERTED, 0, 0);
@@ -55,7 +55,7 @@ int main ()
     ssd1306_i2c_display_update(oled, fbp);
     sleep(3);
     ssd1306_framebuffer_clear(fbp);
-    ssd1306_framebuffer_draw_text(fbp, 0, 0, SSD1306_FONT_DEFAULT, 10, "A", 0);
+    ssd1306_framebuffer_draw_text(fbp, "A", 0, 0, 0, SSD1306_FONT_DEFAULT, 10);
     ssd1306_framebuffer_bitdump(fbp);
     ssd1306_i2c_display_update(oled, fbp);
     sleep(3);

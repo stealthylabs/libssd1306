@@ -48,7 +48,8 @@ typedef enum { // the paths shown here are on Debian-based systems
     SSD1306_FONT_FREEMONO_BOLD,      // /usr/share/fonts/truetype/freefont/FreeMonoBold.ttf
     SSD1306_FONT_FREEMONO_ITALIC,    // /usr/share/fonts/truetype/freefont/FreeMonoOblique.ttf
     SSD1306_FONT_FREEMONO_BOLDITALIC,// /usr/share/fonts/truetype/freefont/FreeMonoBoldOblique.ttf
-    SSD1306_FONT_MAX                 // internal use for error checking
+    SSD1306_FONT_CUSTOM              // use the ssd1306_graphics_options_t with this
+#define SSD1306_FONT_MAX SSD1306_FONT_CUSTOM
 } ssd1306_fontface_t;
 
 typedef struct {
@@ -109,17 +110,44 @@ int ssd1306_framebuffer_draw_bricks(ssd1306_framebuffer_t *fbp);
 //
 int ssd1306_framebuffer_put_pixel(ssd1306_framebuffer_t *fbp,
                 uint8_t x, uint8_t y, bool color);
+// invert the color of the pixel at position (x,y). This is the same as getting
+// the pixel color using the ssd1306_framebuffer_get_pixel() call and changing
+// the color using the ssd1306_framebuffer_put_pixel() call, but twice as fast.
+int ssd1306_framebuffer_invert_pixel(ssd1306_framebuffer_t *fbp,
+                uint8_t x, uint8_t y);
 // returns the value at the pixel. is 0 if pixel is clear, is 1 if the pixel is
 // colored and is -1 if the fbp pointer is bad or the pixel is not found
-int8_t ssd1306_framebuffer_get_pixel(ssd1306_framebuffer_t *fbp,
+int8_t ssd1306_framebuffer_get_pixel(const ssd1306_framebuffer_t *fbp,
                 uint8_t x, uint8_t y);
 
+typedef struct {
+    enum {
+        SSD1306_OPT_FONT_FILE,
+        SSD1306_OPT_ROTATE_TEXT
+    } type;
+    union {
+        const char *s;
+        uintptr_t p;
+        uint64_t u64;
+        int64_t i64;
+        double d;
+    } value;
+} ssd1306_graphics_options_t;
 // returns the number of bytes written to screen, i.e. slen if successful
 // returns 0 if nothing is written to screen
 // returns -1 if error occurred loading fonts or anything else
 ssize_t ssd1306_framebuffer_draw_text(ssd1306_framebuffer_t *fbp,
-                uint8_t x, uint8_t y, ssd1306_fontface_t fontface,
-                uint8_t font_size, const char *str, size_t slen);
+                const char *str, size_t slen,
+                uint8_t x, uint8_t y,
+                ssd1306_fontface_t fontface, uint8_t font_size);
+// if you want to draw text with a custom font or rotate the text you need extra
+// options and this function allows you to do that. the above function is the
+// same as the below function with the options as NULL
+ssize_t ssd1306_framebuffer_draw_text_extra(ssd1306_framebuffer_t *fbp,
+                const char *str, size_t slen,
+                uint8_t x, uint8_t y,
+                ssd1306_fontface_t fontface, uint8_t font_size,
+                const ssd1306_graphics_options_t *opts, size_t num_opts);
 
 #ifdef __cplusplus
 }  // extern "C"

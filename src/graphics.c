@@ -93,7 +93,7 @@ static const char *ssd1306_fontface_names[SSD1306_FONT_MAX + 1] = {
     "SSD1306_FONT_FREEMONO_BOLD",
     "SSD1306_FONT_FREEMONO_ITALIC",
     "SSD1306_FONT_FREEMONO_BOLDITALIC",
-    "SSD1306_FONT_MAX"
+    "SSD1306_FONT_CUSTOM"
 };
 
 struct ssd1306_font_ {
@@ -372,14 +372,12 @@ int ssd1306_framebuffer_hexdump(const ssd1306_framebuffer_t *fbp)
 {
     SSD1306_FB_BAD_PTR_RETURN(fbp, -1);
     FILE *err_fp = SSD1306_FB_GET_ERRFP(fbp);
-    const uint8_t *fb = fbp->buffer;
-    size_t fblen = fbp->len;
     for (size_t y = 0; y < fbp->height; ++y) {
         fprintf(err_fp, "%04zX ", y);
         uint8_t bit = 0;
         uint8_t z = 0;
         for (size_t x = 0; x < fbp->width; ++x) {
-            char ch = fb[x + (y / 8) * fbp->width] & (1 << (y & 7));
+            char ch = ssd1306_framebuffer_get_pixel(fbp, x, y);
             if (ch) { // fill the correct bit
                 z |= (1 << (bit & 7));
             }
@@ -398,8 +396,6 @@ int ssd1306_framebuffer_bitdump_custom(const ssd1306_framebuffer_t *fbp,
 {
     SSD1306_FB_BAD_PTR_RETURN(fbp, -1);
     FILE *err_fp = SSD1306_FB_GET_ERRFP(fbp);
-    const uint8_t *fb = fbp->buffer;
-    size_t fblen = fbp->len;
     if (!isprint(zerobit)) {
         zerobit = '.';
     }
@@ -409,7 +405,7 @@ int ssd1306_framebuffer_bitdump_custom(const ssd1306_framebuffer_t *fbp,
     for (size_t y = 0; y < fbp->height; ++y) {
         fprintf(err_fp, "%04zX ", y);
         for (size_t x = 0; x < fbp->width; ++x) {
-            char ch = (fb[x + (y / 8) * fbp->width] & (1 << (y & 7))) ? onebit : zerobit;
+            char ch = ssd1306_framebuffer_get_pixel(fbp, x, y) ? onebit : zerobit;
             fprintf(err_fp, "%c", ch);
             if (x % 8 == 7 && use_space) {
                 fprintf(err_fp, "%c", ' ');
@@ -449,7 +445,6 @@ int ssd1306_framebuffer_draw_bricks(ssd1306_framebuffer_t *fbp)
 int ssd1306_framebuffer_put_pixel(ssd1306_framebuffer_t *fbp, uint8_t x, uint8_t y, bool color)
 {
     SSD1306_FB_BAD_PTR_RETURN(fbp, -1);
-    uint8_t *fb = fbp->buffer;
     uint8_t w = fbp->width;
     uint8_t h = fbp->height;
     // based on the page arrangement in GDDRAM as per the datasheet
@@ -461,35 +456,62 @@ int ssd1306_framebuffer_put_pixel(ssd1306_framebuffer_t *fbp, uint8_t x, uint8_t
         return -1;
     }
     if (color) {
-        fb[x + (y / 8) * w] |= (1 << (y & 7));
+        fbp->buffer[x + (y / 8) * w] |= (1 << (y & 7));
     } else {
-        fb[x + (y / 8) * w] &= ~(1 << (y & 7));
+        fbp->buffer[x + (y / 8) * w] &= ~(1 << (y & 7));
     }
     return 0;
 }
 
-int8_t ssd1306_framebuffer_get_pixel(ssd1306_framebuffer_t *fbp, uint8_t x, uint8_t y)
+int ssd1306_framebuffer_invert_pixel(ssd1306_framebuffer_t *fbp, uint8_t x, uint8_t y)
 {
     SSD1306_FB_BAD_PTR_RETURN(fbp, -1);
-    uint8_t *fb = fbp->buffer;
     uint8_t w = fbp->width;
     uint8_t h = fbp->height;
     if (x >= 0 && x < w && y >= 0 && y < h) {
-    //    x = w - x - 1;
-    //    y = h - y - 1;
-        return fb[x + (y / 8) * w] & (1 << (y & 7));
+        fbp->buffer[x + (y / 8) * w] ^= (1 << (y & 7));
+        return 0;
+    }
+    return -1;
+}
+
+int8_t ssd1306_framebuffer_get_pixel(const ssd1306_framebuffer_t *fbp, uint8_t x, uint8_t y)
+{
+    SSD1306_FB_BAD_PTR_RETURN(fbp, -1);
+    uint8_t w = fbp->width;
+    uint8_t h = fbp->height;
+    if (x >= 0 && x < w && y >= 0 && y < h) {
+        return fbp->buffer[x + (y / 8) * w] & (1 << (y & 7));
     }
     return -1;
 }
 
 ssize_t ssd1306_framebuffer_draw_text(ssd1306_framebuffer_t *fbp,
+                const char *str, size_t slen,
                 uint8_t x, uint8_t y, ssd1306_fontface_t fontface,
-                uint8_t font_size, const char *str, size_t slen)
+                uint8_t font_size)
+{
+    if (fontface < SSD1306_FONT_CUSTOM) {
+        return ssd1306_framebuffer_draw_text_extra(fbp, str, slen, x, y, fontface, font_size, NULL, 0);
+    } else {
+        FILE *err_fp = SSD1306_FB_GET_ERRFP(fbp);
+        fprintf(err_fp, "ERROR: Fontface cannot be %s in %s(). use %s_extra()\n",
+                ssd1306_fontface_names[(size_t)fontface], __func__, __func__);
+        return -1;
+    }
+}
+
+ssize_t ssd1306_framebuffer_draw_text_extra(ssd1306_framebuffer_t *fbp,
+                const char *str, size_t slen,
+                uint8_t x, uint8_t y, ssd1306_fontface_t fontface,
+                uint8_t font_size,
+                const ssd1306_graphics_options_t *opts, size_t num_opts)
 {
     if (fbp && str) {
         if (slen == 0) {
             slen = strlen(str);
         }
+        //TODO: handle options
         return ssd1306_font_render_string(fbp->font, fbp->err, fontface,
                 font_size, str, slen, (uint16_t)x, (uint16_t)y, fbp);
     }

@@ -35,7 +35,8 @@ int main()
         ssd1306_framebuffer_bitdump(fbp);
         int8_t pixel = ssd1306_framebuffer_get_pixel(fbp, 0, 0);
         fprintf(errp->err_fp, "Pixel at [0,0] is %x. Expecting 1\n", pixel);
-        ssd1306_framebuffer_draw_text(fbp, 32, 32, SSD1306_FONT_DEFAULT, 4, "ABCDeF", 0);
+        ssd1306_framebuffer_draw_text(fbp, "ABCDeF", 0, 32, 32, SSD1306_FONT_CUSTOM, 4);
+        ssd1306_framebuffer_draw_text_extra(fbp, "ABCDeF", 0, 32, 32, SSD1306_FONT_DEFAULT, 4, NULL, 0);
         ssd1306_framebuffer_bitdump(fbp);
     } while (0);
     if (fbp)
