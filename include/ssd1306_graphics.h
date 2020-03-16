@@ -126,11 +126,9 @@ typedef struct {
         SSD1306_OPT_ROTATE_TEXT
     } type;
     union {
-        const char *s;
-        uintptr_t p;
-        uint64_t u64;
-        int64_t i64;
-        double d;
+        const char *font_file;      // NULL terminated path of the font file to use
+        int16_t rotation_degrees;   // rotation angle in degrees, examples: 90, 180, 270, 360, -90, -180, 45 etc.
+        void *ptr;                  // pointer to something in the future
     } value;
 } ssd1306_graphics_options_t;
 // returns the number of bytes written to screen, i.e. slen if successful
