@@ -14,6 +14,16 @@
 #include <string.h>
 #include <stdlib.h>
 #include <ctype.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+
+#if HAVE_DECL_STRERROR_R
+// do nothing
+#else
+// rewrite it
+#warning "strerror_r is reentrant. strerror is not, so removing usage of strerror_r"
+#define strerror_r(A,B,C) do {} while (0)
+#endif
 #ifdef HAVE_FREETYPE2
 #include <ft2build.h>
 #include FT_FREETYPE_H
@@ -177,15 +187,40 @@ static void ssd1306_font_destroy(ssd1306_font_t *font, ssd1306_err_t *err)
 }
 
 static ssize_t ssd1306_font_render_string(ssd1306_font_t *font, ssd1306_err_t *err,
-        ssd1306_fontface_t font_idx, uint8_t font_size, const char *str, size_t slen,
+        const char *font_file, ssd1306_fontface_t font_idx, uint8_t font_size, const char *str, size_t slen,
         uint16_t x, uint16_t y, ssd1306_framebuffer_t *fbp)
 {
     FILE *err_fp = SSD1306_ERR_GET_ERRFP(err);
-    if (font && font_idx < SSD1306_FONT_MAX && fbp && str && slen > 0) {
+    if (font && (font_idx < SSD1306_FONT_MAX || font_file) && fbp && str && slen > 0) {
         ssize_t rc = 0;
+        FT_Face face = NULL;
+        bool free_the_face = false;
         SSD1306_LOCK(&(font->_lock));
         do {
-            FT_Face face = font->faces[font_idx];
+            if (font_idx < SSD1306_FONT_MAX) {
+                face = font->faces[font_idx];
+                free_the_face = false;
+            } else if (font_file) {
+                if (access(font_file, R_OK) < 0) {
+                    int serrno = errno;
+                    char serrbuf[256];
+                    memset(serrbuf, 0, sizeof(serrbuf));
+                    strerror_r(serrno, serrbuf, sizeof(serrbuf));
+                    serrbuf[255] = '\0';
+                    fprintf(err_fp, "ERROR: Tried reading '%s'. Error: %s(%d)\n", font_file,
+                                    serrbuf, serrno);
+                    rc = -1;
+                    break;
+                } 
+                FT_Error ferr = FT_New_Face(font->lib, font_file, 0, &face);
+                if (ferr) {
+                    fprintf(err_fp, "ERROR: FreeType FT_New_Face(%s => %s) error: %d (%s)\n",
+                            ssd1306_fontface_names[SSD1306_FONT_CUSTOM], font_file,
+                            ferr, FT_Error_String(ferr));
+                    break;
+                }
+                free_the_face = true;
+            }
             if (face) {
                 FT_GlyphSlot slot = face->glyph;
                 FT_Vector pen;
@@ -251,6 +286,13 @@ static ssize_t ssd1306_font_render_string(ssd1306_font_t *font, ssd1306_err_t *e
                 break;
             }
         } while (0);
+        if (free_the_face && face) {
+            FT_Error ferr = FT_Done_Face(face);
+            if (ferr) {
+                fprintf(err_fp, "WARN: Freetype FT_Done_Face(%s) error: %d (%s)\n",
+                        font_file ? font_file : "unknown font file", ferr, FT_Error_String(ferr));
+            }
+        }
         SSD1306_UNLOCK(&(font->_lock));
         return rc;
     } else {
@@ -511,9 +553,43 @@ ssize_t ssd1306_framebuffer_draw_text_extra(ssd1306_framebuffer_t *fbp,
         if (slen == 0) {
             slen = strlen(str);
         }
-        //TODO: handle options
-        return ssd1306_font_render_string(fbp->font, fbp->err, fontface,
+        // handle options
+        const char *font_file = NULL;
+        int16_t rotation_degrees = 0;
+        if (opts != NULL && num_opts > 0) {
+            for(size_t i = 0; i < num_opts; ++i) {
+                switch (opts[i].type) {
+                case SSD1306_OPT_FONT_FILE:
+                    if (opts[i].value.font_file != NULL && font_file == NULL) {
+                        font_file = opts[i].value.font_file;
+                    }
+                    break;
+                case SSD1306_OPT_ROTATE_TEXT:
+                    if (opts[i].value.rotation_degrees != 0) {
+                        rotation_degrees = opts[i].value.rotation_degrees;
+                    }
+                    break;
+                default:
+                    /* ignore */
+                    break;
+                }
+            }
+        }
+        if (fontface >= SSD1306_FONT_CUSTOM) {
+            if (font_file != NULL) {
+                return ssd1306_font_render_string(fbp->font, fbp->err,
+                        font_file, SSD1306_FONT_CUSTOM,
+                        font_size, str, slen, (uint16_t)x, (uint16_t)y, fbp);
+            } else {
+                FILE *err_fp = SSD1306_FB_GET_ERRFP(fbp);
+                fprintf(err_fp, "ERROR: If using %s then you need to use SSD1306_OPT_FONT_FILE\n",
+                        ssd1306_fontface_names[SSD1306_FONT_CUSTOM]);
+                return -1;
+            }
+        } else {
+            return ssd1306_font_render_string(fbp->font, fbp->err, NULL, fontface,
                 font_size, str, slen, (uint16_t)x, (uint16_t)y, fbp);
+        }
     }
     return -1;
 }

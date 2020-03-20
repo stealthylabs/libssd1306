@@ -35,8 +35,16 @@ int main()
         ssd1306_framebuffer_bitdump(fbp);
         int8_t pixel = ssd1306_framebuffer_get_pixel(fbp, 0, 0);
         fprintf(errp->err_fp, "Pixel at [0,0] is %x. Expecting 1\n", pixel);
-        ssd1306_framebuffer_draw_text(fbp, "ABCDeF", 0, 32, 32, SSD1306_FONT_CUSTOM, 4);
-        ssd1306_framebuffer_draw_text_extra(fbp, "ABCDeF", 0, 32, 32, SSD1306_FONT_DEFAULT, 4, NULL, 0);
+        ssd1306_framebuffer_draw_text(fbp, "ABCDeF", 0, 32, 32, SSD1306_FONT_DEFAULT, 4);
+        ssd1306_framebuffer_bitdump(fbp);
+        ssd1306_framebuffer_clear(fbp);
+        fprintf(errp->err_fp, "DEBUG: testing custom font\n");
+        ssd1306_graphics_options_t opts[2];
+        opts[0].type = SSD1306_OPT_FONT_FILE;
+        opts[0].value.font_file = "/usr/share/fonts/truetype/msttcorefonts/Comic_Sans_MS.ttf";
+        opts[1].type = SSD1306_OPT_ROTATE_TEXT;
+        opts[1].value.rotation_degrees = 90;
+        ssd1306_framebuffer_draw_text_extra(fbp, "ABCDeF", 0, 32, 32, SSD1306_FONT_CUSTOM, 5, opts, 2);
         ssd1306_framebuffer_bitdump(fbp);
     } while (0);
     if (fbp)
