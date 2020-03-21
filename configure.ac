@@ -32,7 +32,7 @@ AC_DISABLE_STATIC
 AC_HEADER_SYS_WAIT
 AC_HEADER_TIME
 AC_HEADER_STDC
-AC_CHECK_HEADERS([ errno.h features.h fcntl.h inttypes.h ])
+AC_CHECK_HEADERS([ errno.h features.h fcntl.h inttypes.h math.h ])
 AC_CHECK_HEADERS([sys/ioctl.h unistd.h stdio.h linux/i2c-dev.h ctype.h sys/stat.h sys/types.h])
 
 # Checks for typedefs, structures, and compiler characteristics.
