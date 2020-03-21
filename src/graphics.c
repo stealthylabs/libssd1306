@@ -16,6 +16,7 @@
 #include <ctype.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <math.h>
 
 #if HAVE_DECL_STRERROR_R
 // do nothing
@@ -186,12 +187,14 @@ static void ssd1306_font_destroy(ssd1306_font_t *font, ssd1306_err_t *err)
     }
 }
 
-static ssize_t ssd1306_font_render_string(ssd1306_font_t *font, ssd1306_err_t *err,
+static ssize_t ssd1306_font_render_string(ssd1306_framebuffer_t *fbp,
         const char *font_file, ssd1306_fontface_t font_idx, uint8_t font_size, const char *str, size_t slen,
-        uint16_t x, uint16_t y, ssd1306_framebuffer_t *fbp)
+        uint16_t x, uint16_t y,
+        int16_t rotation_degrees, uint8_t rotate_pixel)
 {
-    FILE *err_fp = SSD1306_ERR_GET_ERRFP(err);
-    if (font && (font_idx < SSD1306_FONT_MAX || font_file) && fbp && str && slen > 0) {
+    FILE *err_fp = SSD1306_FB_GET_ERRFP(fbp);
+    if (fbp && fbp->font && (font_idx < SSD1306_FONT_MAX || font_file) && str && slen > 0) {
+        ssd1306_font_t *font = fbp->font;
         ssize_t rc = 0;
         FT_Face face = NULL;
         bool free_the_face = false;
@@ -222,11 +225,12 @@ static ssize_t ssd1306_font_render_string(ssd1306_font_t *font, ssd1306_err_t *e
                 free_the_face = true;
             }
             if (face) {
+                FT_Error ferr;
                 FT_GlyphSlot slot = face->glyph;
-                FT_Vector pen;
+                FT_Matrix transformer = { 0 };
+                FT_Vector pen = { 0 };
                 pen.x = x;
                 pen.y = y;
-                FT_Error ferr;
                 ferr = FT_Set_Char_Size(face, 0, font_size * 64, 300, 300);
                 if (ferr) {
                     fprintf(err_fp, "ERROR: FreeType FT_Set_Char_Size(%s, %d) error: %d (%s)\n",
@@ -234,8 +238,23 @@ static ssize_t ssd1306_font_render_string(ssd1306_font_t *font, ssd1306_err_t *e
                     rc = -1;
                     break;
                 }
+                if (rotation_degrees) {
+                    // convert to radians. multiply by pi/180
+                    double angle = (M_PI * (double)rotation_degrees) / 180.0;
+                    // taken from FreeType tutorial example
+                    transformer.xx = (FT_Fixed)(cos(angle) * 0x10000L);
+                    transformer.xy = (FT_Fixed)(-sin(angle) * 0x10000L);
+                    transformer.yx = (FT_Fixed)(sin(angle) * 0x10000L);
+                    transformer.yy = (FT_Fixed)(cos(angle) * 0x10000L);
+                }
                 for (size_t idx = 0; idx < slen; ++idx) {
-                    FT_Set_Transform(face, NULL, &pen);
+                    if (rotation_degrees) {
+                        // rotation transform
+                        FT_Set_Transform(face, &transformer, &pen);
+                    } else {
+                        // no/identity transform
+                        FT_Set_Transform(face, NULL, &pen);
+                    }
                     // these are the same
                     if (0) {
                         FT_UInt glyph_idx = FT_Get_Char_Index(face, str[idx]);
@@ -269,9 +288,10 @@ static ssize_t ssd1306_font_render_string(ssd1306_font_t *font, ssd1306_err_t *e
                         for (FT_Int j = y_bmap, q = 0; j < ymax_bmap; ++j, ++q) {
                             if (i < 0 || j < 0 || i >= fbp->width || j >= fbp->height)
                                 continue;
-                            ssd1306_framebuffer_put_pixel(fbp, (uint8_t)(i & 0xFF),
+                            ssd1306_framebuffer_put_pixel_rotation(fbp, (uint8_t)(i & 0xFF),
                                     (uint8_t)(j & 0xFF),
-                                    bmap->buffer[q * bmap->width + p]);
+                                    bmap->buffer[q * bmap->width + p],
+                                    rotate_pixel);
                         }
                     }
                     // advance position
@@ -484,16 +504,30 @@ int ssd1306_framebuffer_draw_bricks(ssd1306_framebuffer_t *fbp)
     return 0;
 }
 
-int ssd1306_framebuffer_put_pixel(ssd1306_framebuffer_t *fbp, uint8_t x, uint8_t y, bool color)
+int ssd1306_framebuffer_put_pixel_rotation(ssd1306_framebuffer_t *fbp,
+        uint8_t x, uint8_t y, bool color, uint8_t rotation_flag)
 {
     SSD1306_FB_BAD_PTR_RETURN(fbp, -1);
     uint8_t w = fbp->width;
     uint8_t h = fbp->height;
     // based on the page arrangement in GDDRAM as per the datasheet
     if (x >= 0 && x < w && y >= 0 && y < h) {
-        // this allows rotation!!
-    //    x = w - x - 1;
-    //    y = h - y - 1;
+        switch (rotation_flag) {
+        uint8_t tmp;
+        case 1: // 90deg rotation
+            tmp = x; x = y; y = tmp; // swap x&y
+            x = w - x - 1;
+            break;
+        case 2: // 180deg rotation
+            x = w - x - 1;
+            y = h - y - 1;
+            break;
+        case 3: // -90deg rotation
+            tmp = x; x = y; y = tmp; // swap x&y
+            y = h - y - 1;
+            break;
+        default: break; // no rotation
+        }
     } else {
         return -1;
     }
@@ -503,6 +537,11 @@ int ssd1306_framebuffer_put_pixel(ssd1306_framebuffer_t *fbp, uint8_t x, uint8_t
         fbp->buffer[x + (y / 8) * w] &= ~(1 << (y & 7));
     }
     return 0;
+}
+
+int ssd1306_framebuffer_put_pixel(ssd1306_framebuffer_t *fbp, uint8_t x, uint8_t y, bool color)
+{
+    return ssd1306_framebuffer_put_pixel_rotation(fbp, x, y, color, 0);
 }
 
 int ssd1306_framebuffer_invert_pixel(ssd1306_framebuffer_t *fbp, uint8_t x, uint8_t y)
@@ -549,12 +588,14 @@ ssize_t ssd1306_framebuffer_draw_text_extra(ssd1306_framebuffer_t *fbp,
                 uint8_t font_size,
                 const ssd1306_graphics_options_t *opts, size_t num_opts)
 {
+    FILE *err_fp = SSD1306_FB_GET_ERRFP(fbp);
     if (fbp && str) {
         if (slen == 0) {
             slen = strlen(str);
         }
         // handle options
         const char *font_file = NULL;
+        uint8_t rotate_pixel = 0;
         int16_t rotation_degrees = 0;
         if (opts != NULL && num_opts > 0) {
             for(size_t i = 0; i < num_opts; ++i) {
@@ -564,9 +605,22 @@ ssize_t ssd1306_framebuffer_draw_text_extra(ssd1306_framebuffer_t *fbp,
                         font_file = opts[i].value.font_file;
                     }
                     break;
-                case SSD1306_OPT_ROTATE_TEXT:
+                case SSD1306_OPT_ROTATE_FONT:
                     if (opts[i].value.rotation_degrees != 0) {
                         rotation_degrees = opts[i].value.rotation_degrees;
+                    }
+                    break;
+                case SSD1306_OPT_ROTATE_PIXEL:
+                    if (opts[i].value.rotation_degrees % 90 == 0) {
+                        switch ((opts[i].value.rotation_degrees % 360)) {
+                        case 90: rotate_pixel = 1; break;
+                        case 180: rotate_pixel = 2; break;
+                        case 270: rotate_pixel = 3; break;
+                        default: rotate_pixel = 0; break;
+                        }
+                    } else {
+                        fprintf(err_fp, "WARN: SSD1306_OPT_ROTATE_PIXEL only accepts rotation_degrees in multiples of 90\n");
+                        rotate_pixel = 0;
                     }
                     break;
                 default:
@@ -577,18 +631,20 @@ ssize_t ssd1306_framebuffer_draw_text_extra(ssd1306_framebuffer_t *fbp,
         }
         if (fontface >= SSD1306_FONT_CUSTOM) {
             if (font_file != NULL) {
-                return ssd1306_font_render_string(fbp->font, fbp->err,
-                        font_file, SSD1306_FONT_CUSTOM,
-                        font_size, str, slen, (uint16_t)x, (uint16_t)y, fbp);
+                return ssd1306_font_render_string(fbp,
+                        font_file, SSD1306_FONT_CUSTOM, font_size,
+                        str, slen, (uint16_t)x, (uint16_t)y,
+                        rotation_degrees, rotate_pixel);
             } else {
-                FILE *err_fp = SSD1306_FB_GET_ERRFP(fbp);
                 fprintf(err_fp, "ERROR: If using %s then you need to use SSD1306_OPT_FONT_FILE\n",
                         ssd1306_fontface_names[SSD1306_FONT_CUSTOM]);
                 return -1;
             }
         } else {
-            return ssd1306_font_render_string(fbp->font, fbp->err, NULL, fontface,
-                font_size, str, slen, (uint16_t)x, (uint16_t)y, fbp);
+            return ssd1306_font_render_string(fbp,
+                NULL, fontface, font_size,
+                str, slen, (uint16_t)x, (uint16_t)y,
+                rotation_degrees, rotate_pixel);
         }
     }
     return -1;

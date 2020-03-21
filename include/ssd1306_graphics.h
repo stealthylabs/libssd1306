@@ -110,6 +110,11 @@ int ssd1306_framebuffer_draw_bricks(ssd1306_framebuffer_t *fbp);
 //
 int ssd1306_framebuffer_put_pixel(ssd1306_framebuffer_t *fbp,
                 uint8_t x, uint8_t y, bool color);
+// put_pixel but rotate the pixel location in the GDDRAM.
+// rotation_flag is either 1 for 90 degrees, 2 for 180 degrees, 3 for 270
+// degrees or 0 for default.
+int ssd1306_framebuffer_put_pixel_rotation(ssd1306_framebuffer_t *fbp,
+        uint8_t x, uint8_t y, bool color, uint8_t rotation_flag);
 // invert the color of the pixel at position (x,y). This is the same as getting
 // the pixel color using the ssd1306_framebuffer_get_pixel() call and changing
 // the color using the ssd1306_framebuffer_put_pixel() call, but twice as fast.
@@ -123,7 +128,8 @@ int8_t ssd1306_framebuffer_get_pixel(const ssd1306_framebuffer_t *fbp,
 typedef struct {
     enum {
         SSD1306_OPT_FONT_FILE,
-        SSD1306_OPT_ROTATE_TEXT
+        SSD1306_OPT_ROTATE_FONT,    // rotate the font rendering
+        SSD1306_OPT_ROTATE_PIXEL    // rotate the pixel location: valid values are multiples of 90 for rotation_degrees
     } type;
     union {
         const char *font_file;      // NULL terminated path of the font file to use
