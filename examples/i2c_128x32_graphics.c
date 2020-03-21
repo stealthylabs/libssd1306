@@ -59,6 +59,18 @@ int main ()
     ssd1306_framebuffer_bitdump(fbp);
     ssd1306_i2c_display_update(oled, fbp);
     sleep(3);
+    ssd1306_graphics_options_t opts[3];
+    opts[0].type = SSD1306_OPT_FONT_FILE;
+    opts[0].value.font_file = "/usr/share/fonts/truetype/msttcorefonts/Comic_Sans_MS.ttf";
+    opts[1].type = SSD1306_OPT_ROTATE_PIXEL;
+    opts[1].value.rotation_degrees = 180;
+    opts[2].type = SSD1306_OPT_ROTATE_FONT;
+    opts[2].value.rotation_degrees = 30;
+    ssd1306_framebuffer_clear(fbp);
+    ssd1306_framebuffer_draw_text_extra(fbp, " abcde ", 0, 32, 32, SSD1306_FONT_CUSTOM, 3, opts, 3);
+    ssd1306_framebuffer_bitdump(fbp);
+    ssd1306_i2c_display_update(oled, fbp);
+    sleep(3);
     ssd1306_i2c_run_cmd(oled, SSD1306_I2C_CMD_POWER_OFF, 0, 0);
     ssd1306_framebuffer_destroy(fbp);
     fbp = NULL;
