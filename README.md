@@ -1,5 +1,8 @@
 # libssd1306
 
+We have written blog posts documenting how to use this library here:
+<https://stealthy.io/blog/tag/libssd1306/index.html>.
+
 ## INTRODUCTION
 
 This is a C library to be used for displaying on the SSD1306 OLED display such
