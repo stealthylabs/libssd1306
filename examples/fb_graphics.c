@@ -28,10 +28,23 @@ int main()
             rc = -1;
             break;
         }
-        for (uint8_t i = 0; i < 128; ++i) {
-            ssd1306_framebuffer_put_pixel(fbp, i, 0, true);
+        for (uint8_t i = 0; i < fbp->width; ++i) {
+            ssd1306_framebuffer_put_pixel(fbp, i, i, true);
         }
-
+        ssd1306_framebuffer_bitdump(fbp);
+        ssd1306_framebuffer_clear(fbp);
+        for (uint8_t i = 0; i < 16; ++i) {
+            ssd1306_framebuffer_put_pixel(fbp, i, i, true);
+        }
+        for (uint8_t i = 0; i < 16; ++i) {
+            ssd1306_framebuffer_put_pixel_rotation(fbp, i, i, true, 1 /* 90 degrees */);
+        }
+        for (uint8_t i = 0; i < 16; ++i) {
+            ssd1306_framebuffer_put_pixel_rotation(fbp, i, i, true, 2 /* 180 degrees */);
+        }
+        for (uint8_t i = 0; i < 16; ++i) {
+            ssd1306_framebuffer_put_pixel_rotation(fbp, i, i, true, 3 /* 270 degrees */);
+        }
         ssd1306_framebuffer_bitdump(fbp);
         int8_t pixel = ssd1306_framebuffer_get_pixel(fbp, 0, 0);
         fprintf(errp->err_fp, "Pixel at [0,0] is %x. Expecting 1\n", pixel);
