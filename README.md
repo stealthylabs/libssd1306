@@ -65,14 +65,16 @@ want to run `configure` with the `--prefix` option.
 If you want to build in debug mode, you want to run `configure` with the
 `--enable-debug` option.
 
-If you want to build the `libuv` or `libev` examples, you want to run
-`configure` with the `--with-libuv` or `--with-libev` options.
+The `configure` script auto-detects the presence of `libuv` and `libev` and
+turns on compilation of examples that use `libuv` or `libev`. If you want to
+disable this you may use the `--without-libuv` or `--without-libev` options with
+the `configure` script.
 
 For example, here is how you would run the `configure` script with all the above
-optional options.
+optional library options.
 
 ```bash
-$ ./configure --with-libuv --with-libev --enable-debug --prefix=$HOME/local
+$ ./configure --enable-debug --prefix=$HOME/local
 ```
 
 ### TEST

@@ -98,12 +98,24 @@ fi
 AC_SUBST([AM_CFLAGS])
 AC_SUBST([AM_LDFLAGS])
 
-PKG_CHECK_MODULES([FREETYPE2], [freetype2], [AC_DEFINE([HAVE_FREETYPE2], [1], [Use Freetype2])])
+AC_MSG_CHECKING([if freetype2 is installed])
+PKG_CHECK_MODULES([FREETYPE2], [freetype2],
+                    [
+                     AC_DEFINE([HAVE_FREETYPE2], [1], [Use Freetype2])
+                     ],
+                    [
+                     AC_MSG_ERROR([freetype2 not found, please install it first])
+                     ]
+                    )
 AC_SUBST([FREETYPE2_CFLAGS])
 AC_SUBST([FREETYPE2_LIBS])
 
-AC_ARG_WITH([libuv], AS_HELP_STRING([--with-libuv], [Build examples and applications that use libuv]))
+AC_ARG_WITH([libuv],
+              [AS_HELP_STRING([--without-libuv], [build examples without libuv support @<:@default=yes@:>@])],
+              [with_libuv=no],
+              [with_libuv=yes])
 AS_IF([test "x$with_libuv" = "xyes"], [
+    AC_MSG_CHECKING([if libuv is installed])
        #we have to force some constants because they do not get set
     PKG_CHECK_MODULES([LIBUV], [libuv >= 1.24],
                     [
@@ -120,8 +132,12 @@ AM_CONDITIONAL([HAVE_LIBUV], [test "x$use_libuv" = "xtrue"])
 AC_SUBST([LIBUV_CFLAGS])
 AC_SUBST([LIBUV_LIBS])
 
-AC_ARG_WITH([libev], AS_HELP_STRING([--with-libev], [Build examples and applications that use libev]))
+AC_ARG_WITH([libev],
+              [AS_HELP_STRING([--without-libev], [build examples without libev support @<:@default=yes@:>@])],
+              [with_libev=no],
+              [with_libev=yes])
 AS_IF([test "x$with_libev" = "xyes"], [
+    AC_MSG_CHECKING([if libev is installed])
     PKG_CHECK_MODULES([LIBEV], [libev], 
                       [
                        use_libev=true
