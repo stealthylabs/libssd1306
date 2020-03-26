@@ -539,11 +539,6 @@ int ssd1306_framebuffer_put_pixel_rotation(ssd1306_framebuffer_t *fbp,
     return 0;
 }
 
-int ssd1306_framebuffer_put_pixel(ssd1306_framebuffer_t *fbp, uint8_t x, uint8_t y, bool color)
-{
-    return ssd1306_framebuffer_put_pixel_rotation(fbp, x, y, color, 0);
-}
-
 int ssd1306_framebuffer_invert_pixel(ssd1306_framebuffer_t *fbp, uint8_t x, uint8_t y)
 {
     SSD1306_FB_BAD_PTR_RETURN(fbp, -1);
@@ -647,5 +642,114 @@ ssize_t ssd1306_framebuffer_draw_text_extra(ssd1306_framebuffer_t *fbp,
                 rotation_degrees, rotate_pixel);
         }
     }
+    return -1;
+}
+
+int ssd1306_framebuffer_draw_line(ssd1306_framebuffer_t *fbp,
+            uint8_t x0, uint8_t y0, uint8_t x1, uint8_t y1, bool color)
+{
+    SSD1306_FB_BAD_PTR_RETURN(fbp, -1);
+    uint8_t w = fbp->width;
+    uint8_t h = fbp->height;
+    if (y0 > y1) {
+        // swap to approach calcs from lower point to higher point
+        uint8_t tmp = y0;
+        y0 = y1;
+        y1 = tmp;
+        tmp = x0;
+        x0 = x1;
+        x1 = tmp;
+    }
+    int delta_x = ((int)x1) - ((int)x0);
+    int delta_y = ((int)y1) - ((int)y0);
+    if (delta_x == 0) {
+        if (delta_y != 0) {
+            // it is a straight line
+            ssd1306_framebuffer_put_pixel(fbp, x0, y0, color);
+            while (delta_y--) {
+                ssd1306_framebuffer_put_pixel(fbp, x0, y0, color);
+                y0++;
+            }
+        } else {// single pixel
+            ssd1306_framebuffer_put_pixel(fbp, x0, y0, color);
+        }
+        return 0;
+    } else if (delta_y == 0) {
+        if (delta_x != 0) {
+            // it is a straight line
+            ssd1306_framebuffer_put_pixel(fbp, x0, y0, color);
+            while (delta_x--) {
+                ssd1306_framebuffer_put_pixel(fbp, x0, y0, color);
+                x0++;
+            }
+        } else {// single pixel
+            ssd1306_framebuffer_put_pixel(fbp, x0, y0, color);
+        }
+        return 0;
+    }
+    // ok both delta_x and delta_y are not zero, and the line is not horizontal
+    // or vertical
+    // Bresenham's algorithm using http://www.phatcode.net/res/224/files/html/ch35/35-03.html
+    // calculate the length of the line in each coordinate
+    int dirxn = 0;
+    bool is_octant_1 = false;
+    if (delta_x > 0) {
+        if (delta_x > delta_y) {
+            dirxn = 1;
+            is_octant_1 = false;
+        } else {
+            dirxn = 1;
+            is_octant_1 = true;
+        }
+    } else {
+        delta_x = abs(delta_x);
+        if (delta_x > delta_y) {
+            dirxn = -1;
+            is_octant_1 = false;
+        } else {
+            dirxn = -1;
+            is_octant_1 = true;
+        }
+    }
+    if (is_octant_1) {
+        int delta_x2 = delta_x * 2;
+        int delta_x2_y2 = delta_x2 - (int)(delta_y * 2);
+        int error_term = delta_x2 - (int)delta_y;
+        ssd1306_framebuffer_put_pixel(fbp, x0, y0, color);
+        while (delta_y--) {
+            if (error_term >= 0) {
+                x0 += dirxn;
+                error_term += delta_x2_y2;
+            } else {
+                error_term += delta_x2;
+            }
+            y0++;
+            ssd1306_framebuffer_put_pixel(fbp, x0, y0, color);
+        }
+    } else {
+        int delta_y2 = delta_y * 2;
+        int delta_y2_x2 = delta_y2 - (int)(delta_x * 2);
+        int error_term = delta_y2 - (int)delta_x;
+        ssd1306_framebuffer_put_pixel(fbp, x0, y0, color);
+        while (delta_x--) {
+            if (error_term >= 0) {
+                y0++;
+                error_term += delta_y2_x2;
+            } else {
+                error_term += delta_y2;
+            }
+            x0 += dirxn;
+            ssd1306_framebuffer_put_pixel(fbp, x0, y0, color);
+        }
+    }
+    return 0;
+}
+
+int ssd1306_framebuffer_draw_circle(ssd1306_framebuffer_t *fbp,
+                int16_t xc, int16_t yc, uint16_t radius)
+{
+    SSD1306_FB_BAD_PTR_RETURN(fbp, -1);
+    uint8_t w = fbp->width;
+    uint8_t h = fbp->height;
     return -1;
 }

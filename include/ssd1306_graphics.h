@@ -85,9 +85,12 @@ int ssd1306_framebuffer_hexdump(const ssd1306_framebuffer_t *fbp);
 // set char onebit to the character that represents the 1 bit. by default it is
 // '|' if it not printable or is the number 0 or 1.
 // set use_space to true if you want a space every byte, or false otherwise.
+
 int ssd1306_framebuffer_bitdump_custom(const ssd1306_framebuffer_t *fbp,
                         char zerobit, char onebit, bool use_space);
 #define ssd1306_framebuffer_bitdump(A) ssd1306_framebuffer_bitdump_custom((A), 0, 0, true)
+#define ssd1306_framebuffer_bitdump_nospace(A) ssd1306_framebuffer_bitdump_custom((A), 0, 0, false)
+
 // framebuffer or graphics functions that edit the framebuffer to perform
 // drawing. the user must call the ssd1306_i2c_display_update() function every
 // time they want to update the display on the screen.
@@ -108,13 +111,13 @@ int ssd1306_framebuffer_draw_bricks(ssd1306_framebuffer_t *fbp);
 //   V
 //  (63,0)  x ---->    (127,63)
 //
-int ssd1306_framebuffer_put_pixel(ssd1306_framebuffer_t *fbp,
-                uint8_t x, uint8_t y, bool color);
-// put_pixel but rotate the pixel location in the GDDRAM.
 // rotation_flag is either 1 for 90 degrees, 2 for 180 degrees, 3 for 270
-// degrees or 0 for default.
+// degrees or 0 for 0 degrees/360 degrees or any other.
+
 int ssd1306_framebuffer_put_pixel_rotation(ssd1306_framebuffer_t *fbp,
         uint8_t x, uint8_t y, bool color, uint8_t rotation_flag);
+#define ssd1306_framebuffer_put_pixel(fbp,x,y,color) ssd1306_framebuffer_put_pixel_rotation((fbp),(x),(y),(color),0)
+
 // invert the color of the pixel at position (x,y). This is the same as getting
 // the pixel color using the ssd1306_framebuffer_get_pixel() call and changing
 // the color using the ssd1306_framebuffer_put_pixel() call, but twice as fast.
@@ -152,6 +155,26 @@ ssize_t ssd1306_framebuffer_draw_text_extra(ssd1306_framebuffer_t *fbp,
                 uint8_t x, uint8_t y,
                 ssd1306_fontface_t fontface, uint8_t font_size,
                 const ssd1306_graphics_options_t *opts, size_t num_opts);
+
+// draw a line using Bresenham's line algorithm. returns 0 on success and -1 on
+// failure. if the (x0,y0) or (x1,y1) coordinates are outside the width and
+// height of the screen, the coordinates get clipped automatically
+// coordinates look like below as shown for a 128x64 size screen
+//  (0,0)   x ---->    (127,0)
+//  y
+//   |
+//   V
+//  (63,0)  x ---->    (127,63)
+int ssd1306_framebuffer_draw_line(ssd1306_framebuffer_t *fbp,
+            uint8_t x0, uint8_t y0, uint8_t x1, uint8_t y1, bool color);
+
+// draw a circle using Bresenham's circle drawing algorithm. returns 0 on
+// success and -1 on failure. if parts of the circle lie outside the screen,
+// they get clipped automatically. the center of the circle can also lie outside
+// the screen, and hence we use a larger type for (x,y), and the center can be
+// negative as well.
+int ssd1306_framebuffer_draw_circle(ssd1306_framebuffer_t *fbp,
+                int16_t xc, int16_t yc, uint16_t radius);
 
 #ifdef __cplusplus
 }  // extern "C"
