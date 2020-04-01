@@ -187,19 +187,23 @@ static void ssd1306_font_destroy(ssd1306_font_t *font, ssd1306_err_t *err)
     }
 }
 
-static ssize_t ssd1306_font_render_string(ssd1306_framebuffer_t *fbp,
+static int ssd1306_font_render_string(ssd1306_framebuffer_t *fbp,
         const char *font_file, ssd1306_fontface_t font_idx, uint8_t font_size, const char *str, size_t slen,
         uint16_t x, uint16_t y,
-        int16_t rotation_degrees, uint8_t rotate_pixel)
+        int16_t rotation_degrees, uint8_t rotate_pixel,
+        ssd1306_framebuffer_box_t *bbox)
 {
     FILE *err_fp = SSD1306_FB_GET_ERRFP(fbp);
     if (fbp && fbp->font && (font_idx < SSD1306_FONT_MAX || font_file) && str && slen > 0) {
         ssd1306_font_t *font = fbp->font;
-        ssize_t rc = 0;
+        int rc = 0;
         FT_Face face = NULL;
         bool free_the_face = false;
         SSD1306_LOCK(&(font->_lock));
         do {
+            if (bbox) {
+                bbox->top = bbox->left = bbox->right = bbox->bottom = 0;
+            }
             if (font_idx < SSD1306_FONT_MAX) {
                 face = font->faces[font_idx];
                 free_the_face = false;
@@ -229,8 +233,6 @@ static ssize_t ssd1306_font_render_string(ssd1306_framebuffer_t *fbp,
                 FT_GlyphSlot slot = face->glyph;
                 FT_Matrix transformer = { 0 };
                 FT_Vector pen = { 0 };
-                pen.x = x;
-                pen.y = y;
                 ferr = FT_Set_Char_Size(face, 0, font_size * 64, 300, 300);
                 if (ferr) {
                     fprintf(err_fp, "ERROR: FreeType FT_Set_Char_Size(%s, %d) error: %d (%s)\n",
@@ -280,10 +282,34 @@ static ssize_t ssd1306_font_render_string(ssd1306_framebuffer_t *fbp,
                     }
                     //draw bitmap
                     FT_Bitmap *bmap = &slot->bitmap;
-                    FT_Int x_bmap = slot->bitmap_left;
-                    FT_Int y_bmap = fbp->height - slot->bitmap_top;
+                    FT_Int x_bmap = x + slot->bitmap_left;
+                    FT_Int y_bmap = y;
                     FT_Int xmax_bmap = x_bmap + bmap->width;
                     FT_Int ymax_bmap = y_bmap + bmap->rows;
+                    // find the max height of the font
+                    if (bbox) {
+                        if (idx == 0) { // set top and left if not set
+                            bbox->top = ((uint8_t)(x_bmap & 0xFF));
+                            if (bbox->top >= fbp->width)
+                                bbox->top = fbp->width;
+                            bbox->left = ((uint8_t)(y_bmap & 0xFF));
+                            if (bbox->left >= fbp->height)
+                                bbox->left = fbp->height;
+                        }
+                        // choose the max right/bottom since characters in the
+                        // middle might have a lower bottom than just the end
+                        // characters. like a y or g
+                        uint8_t right = ((uint8_t)(xmax_bmap & 0xFF)) - 1;
+                        if (right >= fbp->width)
+                            right = fbp->width;
+                        if (bbox->right < right)
+                            bbox->right = right;
+                        uint8_t bottom = ((uint8_t)(ymax_bmap & 0xFF)) - 1;
+                        if (bottom >= fbp->height)
+                            bottom = fbp->height;
+                        if (bbox->bottom < bottom)
+                            bbox->bottom = bottom;
+                    }
                     for (FT_Int i = x_bmap, p = 0; i < xmax_bmap; ++i, ++p) {
                         for (FT_Int j = y_bmap, q = 0; j < ymax_bmap; ++j, ++q) {
                             if (i < 0 || j < 0 || i >= fbp->width || j >= fbp->height)
@@ -298,7 +324,7 @@ static ssize_t ssd1306_font_render_string(ssd1306_framebuffer_t *fbp,
                     pen.x += slot->advance.x;
                     pen.y += slot->advance.y;
                 }
-                rc = (ssize_t)slen;
+                rc = 0;
             } else {
                 fprintf(err_fp, "ERROR: Font %s does not have a face pointer\n",
                         ssd1306_fontface_names[font_idx]);
@@ -454,7 +480,7 @@ int ssd1306_framebuffer_hexdump(const ssd1306_framebuffer_t *fbp)
 }
 
 int ssd1306_framebuffer_bitdump_custom(const ssd1306_framebuffer_t *fbp,
-            char zerobit, char onebit, bool use_space)
+            char zerobit, char onebit, bool use_space, bool use_color)
 {
     SSD1306_FB_BAD_PTR_RETURN(fbp, -1);
     FILE *err_fp = SSD1306_FB_GET_ERRFP(fbp);
@@ -467,8 +493,12 @@ int ssd1306_framebuffer_bitdump_custom(const ssd1306_framebuffer_t *fbp,
     for (size_t y = 0; y < fbp->height; ++y) {
         fprintf(err_fp, "%04zX ", y);
         for (size_t x = 0; x < fbp->width; ++x) {
-            char ch = ssd1306_framebuffer_get_pixel(fbp, x, y) ? onebit : zerobit;
-            fprintf(err_fp, "%c", ch);
+            int8_t pixel = ssd1306_framebuffer_get_pixel(fbp, x, y);
+            if (pixel) {// red
+                fprintf(err_fp, use_color ? "\x1b[31m%c\x1b[0m" : "%c", onebit);
+            } else {// green
+                fprintf(err_fp, use_color ? "\x1b[34m%c\x1b[0m" : "%c", zerobit);
+            }
             if (x % 8 == 7 && use_space) {
                 fprintf(err_fp, "%c", ' ');
             }
@@ -565,10 +595,11 @@ int8_t ssd1306_framebuffer_get_pixel(const ssd1306_framebuffer_t *fbp, uint8_t x
 ssize_t ssd1306_framebuffer_draw_text(ssd1306_framebuffer_t *fbp,
                 const char *str, size_t slen,
                 uint8_t x, uint8_t y, ssd1306_fontface_t fontface,
-                uint8_t font_size)
+                uint8_t font_size, ssd1306_framebuffer_box_t *bbox)
 {
     if (fontface < SSD1306_FONT_CUSTOM) {
-        return ssd1306_framebuffer_draw_text_extra(fbp, str, slen, x, y, fontface, font_size, NULL, 0);
+        return ssd1306_framebuffer_draw_text_extra(fbp, str, slen, x, y,
+                    fontface, font_size, NULL, 0, bbox);
     } else {
         FILE *err_fp = SSD1306_FB_GET_ERRFP(fbp);
         fprintf(err_fp, "ERROR: Fontface cannot be %s in %s(). use %s_extra()\n",
@@ -581,7 +612,8 @@ ssize_t ssd1306_framebuffer_draw_text_extra(ssd1306_framebuffer_t *fbp,
                 const char *str, size_t slen,
                 uint8_t x, uint8_t y, ssd1306_fontface_t fontface,
                 uint8_t font_size,
-                const ssd1306_graphics_options_t *opts, size_t num_opts)
+                const ssd1306_graphics_options_t *opts, size_t num_opts,
+                ssd1306_framebuffer_box_t *bbox)
 {
     FILE *err_fp = SSD1306_FB_GET_ERRFP(fbp);
     if (fbp && str) {
@@ -629,7 +661,7 @@ ssize_t ssd1306_framebuffer_draw_text_extra(ssd1306_framebuffer_t *fbp,
                 return ssd1306_font_render_string(fbp,
                         font_file, SSD1306_FONT_CUSTOM, font_size,
                         str, slen, (uint16_t)x, (uint16_t)y,
-                        rotation_degrees, rotate_pixel);
+                        rotation_degrees, rotate_pixel, bbox);
             } else {
                 fprintf(err_fp, "ERROR: If using %s then you need to use SSD1306_OPT_FONT_FILE\n",
                         ssd1306_fontface_names[SSD1306_FONT_CUSTOM]);
@@ -639,7 +671,7 @@ ssize_t ssd1306_framebuffer_draw_text_extra(ssd1306_framebuffer_t *fbp,
             return ssd1306_font_render_string(fbp,
                 NULL, fontface, font_size,
                 str, slen, (uint16_t)x, (uint16_t)y,
-                rotation_degrees, rotate_pixel);
+                rotation_degrees, rotate_pixel, bbox);
         }
     }
     return -1;

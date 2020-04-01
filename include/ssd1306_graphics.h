@@ -85,11 +85,13 @@ int ssd1306_framebuffer_hexdump(const ssd1306_framebuffer_t *fbp);
 // set char onebit to the character that represents the 1 bit. by default it is
 // '|' if it not printable or is the number 0 or 1.
 // set use_space to true if you want a space every byte, or false otherwise.
+// We also use terminal color codes to draw the text. red for '|' and green for '.'
+// the boolean use_color needs to be set to use this
 
 int ssd1306_framebuffer_bitdump_custom(const ssd1306_framebuffer_t *fbp,
-                        char zerobit, char onebit, bool use_space);
-#define ssd1306_framebuffer_bitdump(A) ssd1306_framebuffer_bitdump_custom((A), 0, 0, true)
-#define ssd1306_framebuffer_bitdump_nospace(A) ssd1306_framebuffer_bitdump_custom((A), 0, 0, false)
+                        char zerobit, char onebit, bool use_space, bool use_color);
+#define ssd1306_framebuffer_bitdump(A) ssd1306_framebuffer_bitdump_custom((A), 0, 0, true, true)
+#define ssd1306_framebuffer_bitdump_nospace(A) ssd1306_framebuffer_bitdump_custom((A), 0, 0, false, true)
 
 // framebuffer or graphics functions that edit the framebuffer to perform
 // drawing. the user must call the ssd1306_i2c_display_update() function every
@@ -140,13 +142,24 @@ typedef struct {
         void *ptr;                  // pointer to something in the future
     } value;
 } ssd1306_graphics_options_t;
-// returns the number of bytes written to screen, i.e. slen if successful
-// returns 0 if nothing is written to screen
+
+typedef struct {
+    uint8_t top;
+    uint8_t left;
+    uint8_t bottom;
+    uint8_t right;
+} ssd1306_framebuffer_box_t;
+
+// returns 0 if the task succeeded and sets the bounding box pixel values
 // returns -1 if error occurred loading fonts or anything else
+// if the bounding_box is set, it returns the pixel coordinates of the drawing
+// of the font. This can be used by the developer to know where to draw the next string of text vertically or horizontally.
+// the box is always within the framebuffer height and width
 ssize_t ssd1306_framebuffer_draw_text(ssd1306_framebuffer_t *fbp,
                 const char *str, size_t slen,
                 uint8_t x, uint8_t y,
-                ssd1306_fontface_t fontface, uint8_t font_size);
+                ssd1306_fontface_t fontface, uint8_t font_size,
+                ssd1306_framebuffer_box_t *bounding_box);
 // if you want to draw text with a custom font or rotate the text you need extra
 // options and this function allows you to do that. the above function is the
 // same as the below function with the options as NULL
@@ -154,7 +167,7 @@ ssize_t ssd1306_framebuffer_draw_text_extra(ssd1306_framebuffer_t *fbp,
                 const char *str, size_t slen,
                 uint8_t x, uint8_t y,
                 ssd1306_fontface_t fontface, uint8_t font_size,
-                const ssd1306_graphics_options_t *opts, size_t num_opts);
+                const ssd1306_graphics_options_t *opts, size_t num_opts, ssd1306_framebuffer_box_t *bounding_box);
 
 // draw a line using Bresenham's line algorithm. returns 0 on success and -1 on
 // failure. if the (x0,y0) or (x1,y1) coordinates are outside the width and
