@@ -27,7 +27,7 @@ This is why this library is in C, so it can directly execute on the Raspberry Pi
 or similar SBCs where it can be integrated into other applications easily.
 
 Another reason for using this C library is to be able to integrate this display
-with libraries like `libuv` or `libev` or similar event-based libraries,  and control
+with libraries like `libev` or similar event-based libraries,  and control
 the display using events and keeping the power consumption low on such devices.
 
 
@@ -40,7 +40,7 @@ Install Pre-requisties first.
 ```bash
 $ sudo apt-get -y install libfreetype-dev fonts-freefont-ttf ttf-bitstream-vera
 ### optional pre-requisites
-$ sudo apt-get -y install libuv1-dev libev-dev
+$ sudo apt-get -y install libev-dev
 ```
 
 You may install several other font libraries such as Microsoft fonts which we
@@ -65,9 +65,9 @@ want to run `configure` with the `--prefix` option.
 If you want to build in debug mode, you want to run `configure` with the
 `--enable-debug` option.
 
-The `configure` script auto-detects the presence of `libuv` and `libev` and
-turns on compilation of examples that use `libuv` or `libev`. If you want to
-disable this you may use the `--without-libuv` or `--without-libev` options with
+The `configure` script auto-detects the presence of `libev` and
+turns on compilation of examples that use `libev`. If you want to
+disable this you may use the `--without-libev` option with
 the `configure` script.
 
 For example, here is how you would run the `configure` script with all the above

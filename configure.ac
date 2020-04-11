@@ -110,28 +110,6 @@ PKG_CHECK_MODULES([FREETYPE2], [freetype2],
 AC_SUBST([FREETYPE2_CFLAGS])
 AC_SUBST([FREETYPE2_LIBS])
 
-AC_ARG_WITH([libuv],
-              [AS_HELP_STRING([--without-libuv], [build examples without libuv support @<:@default=yes@:>@])],
-              [with_libuv=no],
-              [with_libuv=yes])
-AS_IF([test "x$with_libuv" = "xyes"], [
-    AC_MSG_CHECKING([if libuv is installed])
-       #we have to force some constants because they do not get set
-    PKG_CHECK_MODULES([LIBUV], [libuv >= 1.24],
-                    [
-                     use_libuv=true
-                     AC_DEFINE([HAVE_UV_H], [1], [Have uv.h])
-                    ],
-                    [
-                     AC_CHECK_HEADERS([uv.h], [use_libuv=true], [use_libuv=false])
-                     AC_CHECK_LIB([uv], [uv_run], [use_libuv=true], [use_libuv=false])
-                    ]
-    )
-])
-AM_CONDITIONAL([HAVE_LIBUV], [test "x$use_libuv" = "xtrue"])
-AC_SUBST([LIBUV_CFLAGS])
-AC_SUBST([LIBUV_LIBS])
-
 AC_ARG_WITH([libev],
               [AS_HELP_STRING([--without-libev], [build examples without libev support @<:@default=yes@:>@])],
               [with_libev=no],
