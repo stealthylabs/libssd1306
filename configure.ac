@@ -9,6 +9,7 @@
 
 AC_PREREQ([2.69])
 AC_INIT([libssd1306], [0.6], [github@stealthylabs.com])
+AC_CONFIG_AUX_DIR([.])
 AM_INIT_AUTOMAKE
 AC_CONFIG_SRCDIR([src/ssd1306_i2c.c])
 AM_CONFIG_HEADER(include/ssd1306_config.h)
