@@ -19,7 +19,11 @@ int main ()
     if (!oled) {
         return -1;
     }
-    ssd1306_i2c_display_initialize(oled);
+    if (ssd1306_i2c_display_initialize(oled) < 0) {
+        fprintf(stderr, "ERROR: Failed to initialize the display. Check if it is connected !\n");
+        ssd1306_i2c_close(oled);
+        return -1;
+    }
     sleep(3);
     ssd1306_framebuffer_t *fbp = ssd1306_framebuffer_create(oled->width, oled->height, oled->err);
 
