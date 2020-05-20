@@ -5,7 +5,7 @@
  * LICENSE: Refer license file
  */
 #include <ssd1306_config.h>
-#if HAVE_FEATURES_H
+#if LIBSSD1306_HAVE_FEATURES_H
 #include <features.h>
 #endif
 #include <errno.h>
@@ -16,7 +16,7 @@
 #include <string.h>
 #include <stdlib.h>
 
-#if HAVE_LINUX_I2C_DEV_H
+#if LIBSSD1306_HAVE_LINUX_I2C_DEV_H
 #include <linux/i2c-dev.h>
 #else
 #warning "You need to install libi2c-dev and i2c-tools"
@@ -26,7 +26,7 @@
 #endif
 #include <ssd1306_i2c.h>
 
-#if HAVE_DECL_STRERROR_R
+#if LIBSSD1306_HAVE_DECL_STRERROR_R
 // do nothing
 #else
 // rewrite it
@@ -486,5 +486,5 @@ int ssd1306_i2c_display_clear(ssd1306_i2c_t *oled)
 
 const char *ssd1306_i2c_version(void)
 {
-    return PACKAGE_VERSION;
+    return LIBSSD1306_PACKAGE_VERSION;
 }

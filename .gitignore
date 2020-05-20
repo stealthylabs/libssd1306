@@ -12,6 +12,7 @@ TAGS
 autom4te.cache
 config.status
 ssd1306_config.h
+_ssd1306_config.h*
 Makefile
 .deps
 *~

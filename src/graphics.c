@@ -5,7 +5,7 @@
  * LICENSE: Refer license file
  */
 #include <ssd1306_config.h>
-#if HAVE_FEATURES_H
+#if LIBSSD1306_HAVE_FEATURES_H
 #include <features.h>
 #endif
 #include <errno.h>
@@ -18,14 +18,14 @@
 #include <sys/stat.h>
 #include <math.h>
 
-#if HAVE_DECL_STRERROR_R
+#if LIBSSD1306_HAVE_DECL_STRERROR_R
 // do nothing
 #else
 // rewrite it
 #warning "strerror_r is reentrant. strerror is not, so removing usage of strerror_r"
 #define strerror_r(A,B,C) do {} while (0)
 #endif
-#ifdef HAVE_FREETYPE2
+#ifdef LIBSSD1306_HAVE_FREETYPE2
 #include <ft2build.h>
 #include FT_FREETYPE_H
 
@@ -61,7 +61,7 @@ static const char *FT_Error_String(FT_Error err)
 #define SSD1306_ERR_GET_ERRFP(P) ((P) != NULL && (P)->err_fp != NULL) ? (P)->err_fp : stderr;
 #endif
 
-#ifdef HAVE_PTHREAD
+#ifdef LIBSSD1306_HAVE_PTHREAD
     #include <pthread.h>
     typedef pthread_mutex_t ssd1306_lock_t;
     #define SSD1306_LOCK(A) pthread_mutex_lock((A))
@@ -349,7 +349,7 @@ static int ssd1306_font_render_string(ssd1306_framebuffer_t *fbp,
 
 const char *ssd1306_fb_version(void)
 {
-    return PACKAGE_VERSION;
+    return LIBSSD1306_PACKAGE_VERSION;
 }
 
 ssd1306_err_t *ssd1306_err_create(FILE *fp)

@@ -12,8 +12,9 @@ AC_INIT([libssd1306], [0.6], [github@stealthylabs.com])
 AC_CONFIG_AUX_DIR([.])
 AM_INIT_AUTOMAKE
 AC_CONFIG_SRCDIR([src/ssd1306_i2c.c])
-AM_CONFIG_HEADER(include/ssd1306_config.h)
 AC_CONFIG_MACRO_DIRS([m4])
+AM_CONFIG_HEADER(include/_ssd1306_config.h)
+AX_PREFIX_CONFIG_H(include/ssd1306_config.h)
 
 # Checks for programs.
 ## store user given CFLAGS
