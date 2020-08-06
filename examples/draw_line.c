@@ -4,11 +4,6 @@
  * SOFTWARE: libssd1306-i2c
  * LICENSE: Refer license file
  */
-#include <errno.h>
-#include <unistd.h>
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
 #include <ssd1306_graphics.h>
 
 int main()

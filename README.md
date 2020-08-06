@@ -92,6 +92,24 @@ $ ./examples/test_fb_graphics
 $ ./examples/test_i2c_128x132
 ```
 
+### DEBUGGING
+
+To load the example executables directly into the debugger like `gdb` or a
+memory profiler like `valgrind`, you must use the `libtool` script created
+during the build process. It will locate all the required libraries, set the
+environment correctly and will run the program under the debugger. For example,
+
+```bash
+### check the libraries that are linked
+$ ./libtool --mode=execute ldd -d -r ./examples/test_libev_clock
+
+### running executable under gdb
+$ ./libtool --mode=execute gdb --args ./examples/test_draw_line
+
+### running executable under valgrind
+$ ./libtool --mode=execute valgrind --tool=memcheck ./examples/test_fb_graphics
+```
+
 ## COPYRIGHT
 
 &copy; 2020. Stealthy Labs LLC. All Rights Reserved.

@@ -7,8 +7,28 @@
 #ifndef __LIB_SSD1306_GFX_H__
 #define __LIB_SSD1306_GFX_H__
 
-#include <inttypes.h>
+#include <ssd1306_config.h>
+#ifdef LIBSSD1306_HAVE_ERRNO_H
+#include <errno.h>
+#endif
+#ifdef LIBSSD1306_HAVE_STDBOOL_H
 #include <stdbool.h>
+#endif
+#ifdef LIBSSD1306_HAVE_INTTYPES_H
+#include <inttypes.h>
+#endif
+#ifdef LIBSSD1306_HAVE_STDIO_H
+#include <stdio.h>
+#endif
+#ifdef LIBSSD1306_HAVE_UNISTD_H
+#include <unistd.h>
+#endif
+#ifdef LIBSSD1306_HAVE_STRING_H
+#include <string.h>
+#endif
+#ifdef LIBSSD1306_HAVE_STDLIB_H
+#include <stdlib.h>
+#endif
 
 #ifdef __cplusplus
 extern "C" {

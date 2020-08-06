@@ -5,16 +5,30 @@
  * LICENSE: Refer license file
  */
 #include <ssd1306_config.h>
-#if LIBSSD1306_HAVE_FEATURES_H
+#ifdef LIBSSD1306_HAVE_FEATURES_H
 #include <features.h>
 #endif
+#ifdef LIBSSD1306_HAVE_ERRNO_H
 #include <errno.h>
+#endif
+#ifdef LIBSSD1306_HAVE_UNISTD_H
 #include <unistd.h>
+#endif
+#ifdef LIBSSD1306_HAVE_FCNTL_H
 #include <fcntl.h>
+#endif
+#ifdef LIBSSD1306_HAVE_SYS_IOCTL_H
 #include <sys/ioctl.h>
+#endif
+#ifdef LIBSSD1306_HAVE_STDIO_H
 #include <stdio.h>
+#endif
+#ifdef LIBSSD1306_HAVE_STRING_H
 #include <string.h>
+#endif
+#ifdef LIBSSD1306_HAVE_STDLIB_H
 #include <stdlib.h>
+#endif
 
 #if LIBSSD1306_HAVE_LINUX_I2C_DEV_H
 #include <linux/i2c-dev.h>

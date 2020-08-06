@@ -14,3 +14,10 @@ test_fb_graphics_LDADD=$(SSD1306_LIB)
 
 test_draw_line_SOURCES=draw_line.c
 test_draw_line_LDADD=$(SSD1306_LIB)
+
+if HAVE_LIBEV
+noinst_PROGRAMS+=test_libev_clock
+test_libev_clock_SOURCES=libev_clock.c
+test_libev_clock_CFLAGS=$(LIBEV_CFLAGS)
+test_libev_clock_LDADD=$(SSD1306_LIB) $(LIBEV_LIBS)
+endif

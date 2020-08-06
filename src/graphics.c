@@ -5,18 +5,36 @@
  * LICENSE: Refer license file
  */
 #include <ssd1306_config.h>
-#if LIBSSD1306_HAVE_FEATURES_H
+#ifdef LIBSSD1306_HAVE_FEATURES_H
 #include <features.h>
 #endif
+#ifdef LIBSSD1306_HAVE_ERRNO_H
 #include <errno.h>
+#endif
+#ifdef LIBSSD1306_HAVE_UNISTD_H
 #include <unistd.h>
+#endif
+#ifdef LIBSSD1306_HAVE_STDIO_H
 #include <stdio.h>
+#endif
+#ifdef LIBSSD1306_HAVE_STRING_H
 #include <string.h>
+#endif
+#ifdef LIBSSD1306_HAVE_STDLIB_H
 #include <stdlib.h>
+#endif
+#ifdef LIBSSD1306_HAVE_CTYPE_H
 #include <ctype.h>
+#endif
+#ifdef LIBSSD1306_HAVE_SYS_TYPES_H
 #include <sys/types.h>
+#endif
+#ifdef LIBSSD1306_HAVE_SYS_STAT_H
 #include <sys/stat.h>
+#endif
+#ifdef LIBSSD1306_HAVE_MATH_H
 #include <math.h>
+#endif
 
 #if LIBSSD1306_HAVE_DECL_STRERROR_R
 // do nothing

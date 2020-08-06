@@ -7,6 +7,7 @@
 #ifndef __LIB_SSD1306_I2C_H__
 #define __LIB_SSD1306_I2C_H__
 
+#include <ssd1306_config.h>
 #include <ssd1306_graphics.h>
 
 #ifdef __cplusplus
