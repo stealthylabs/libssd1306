@@ -80,6 +80,9 @@ $ ./configure --enable-debug --prefix=$HOME/local
 
 ### TEST
 
+We have provided some sample applications to test the framebuffer objects, the
+I<sup>2</sup>C I/O, and to use `libev` along with this library to demonstrate
+writing to the SSD1306 OLED screen using an event library.
 
 ```bash
 ###  if you want to run all the tests on the attached OLED device on a Raspberry Pi
@@ -90,6 +93,10 @@ $ ./examples/test_fb_graphics
 
 ### if you just want to run a single test on a connected SSD1306 I<sup>2</sup>C device  manually
 $ ./examples/test_i2c_128x132
+
+### if you want to run the clock display for 30 seconds
+$ ./examples/test_libev_clock
+
 ```
 
 ### DEBUGGING
