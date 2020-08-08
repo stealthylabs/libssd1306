@@ -58,9 +58,6 @@ void onesec_timer_cb(EV_P_ ev_timer *w, int revents)
 
 int main(int argc, char **argv)
 {
-    int rc = 0;
-    /* create the loop variable by using the default */
-    struct ev_loop *loop = EV_DEFAULT;
     /* check if i2c device exists */
 	const char *filename = (argc > 1) ? argv[1] : "/dev/i2c-1";
     size_t height = (argc > 2) ? strtoul(argv[2], NULL, 10) : 32;
@@ -70,18 +67,24 @@ int main(int argc, char **argv)
     if (!oled) {
         return -1;
     }
+    /* initialize the I2C device */
     if (ssd1306_i2c_display_initialize(oled) < 0) {
         fprintf(stderr, "ERROR: Failed to initialize the display. Check if it is connected !\n");
         ssd1306_i2c_close(oled);
         return -1;
     }
+    /* clear the display */
     ssd1306_i2c_display_clear(oled);
+    /* create a framebuffer */
     ssd1306_framebuffer_t *fbp = ssd1306_framebuffer_create(oled->width, oled->height, oled->err);
+    /* create an object to send to the callbacks */
     i2c_clock_t timer_data = {
         .oled = oled,
         .fbp = fbp,
         .call_count = 30 /* timeout after 30 seconds */
     };
+    /* create the loop variable by using the default */
+    struct ev_loop *loop = EV_DEFAULT;
     /* create the timer event object */
     ev_timer timer_watcher = { 0 };
     /* initialize the timer to update each second and invoke callback */
@@ -93,5 +96,5 @@ int main(int argc, char **argv)
     ev_run(loop, 0);
     ssd1306_framebuffer_destroy(fbp);
     ssd1306_i2c_close(oled);
-    return rc;
+    return 0;
 }
