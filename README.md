@@ -39,7 +39,7 @@ Install Pre-requisties first.
 
 ```bash
 $ sudo apt-get -y install libfreetype6-dev fonts-freefont-ttf ttf-bitstream-vera \
-        autoconf automake libtool autotools-dev build-essential
+        autoconf automake libtool autotools-dev build-essential pkg-config
 ### optional pre-requisites
 $ sudo apt-get -y install libev-dev
 ```
