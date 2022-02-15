@@ -135,5 +135,28 @@ AM_CONDITIONAL([HAVE_LIBEV], [test "x$use_libev" = "xtrue"])
 AC_SUBST([LIBEV_CFLAGS])
 AC_SUBST([LIBEV_LIBS])
 
+AC_ARG_WITH([libunistring],
+              [AS_HELP_STRING([--without-libunistring], [build examples without libunistring support @<:@default=yes@:>@])],
+              [with_libunistring=no],
+              [with_libunistring=yes])
+AS_IF([test "x$with_libunistring" = "xyes"], [
+    AC_MSG_CHECKING([if libunistring is installed])
+    PKG_CHECK_MODULES([UNISTRING], [libunistring], 
+                      [
+                       use_libunistring=true
+                       AC_DEFINE([HAVE_EV_H], [1], [Have libunistring.h])
+                      ],
+                      [
+                       AC_CHECK_HEADERS([unistring.h], [use_libunistring=true], [use_libunistring=false])
+                       AC_CHECK_LIB([unistring], [u8_to_u32], [use_libunistring=true], [use_libunistring=false])
+                       UNISTRING_LIBS="-lunistring"
+                       echo "Setting UNISTRING_LIBS to $UNISTRING_LIBS"
+                      ]
+    )
+])
+AM_CONDITIONAL([HAVE_UNISTRING], [test "x$use_libunistring" = "xtrue"])
+AC_SUBST([UNISTRING_CFLAGS])
+AC_SUBST([UNISTRING_LIBS])
+
 AC_CONFIG_FILES([Makefile src/Makefile examples/Makefile])
 AC_OUTPUT

@@ -176,7 +176,7 @@ typedef struct {
 // of the font. This can be used by the developer to know where to draw the next string of text vertically or horizontally.
 // the box is always within the framebuffer height and width
 ssize_t ssd1306_framebuffer_draw_text(ssd1306_framebuffer_t *fbp,
-                const uint8_t *str, size_t slen,
+                const char *str, size_t slen,
                 uint8_t x, uint8_t y,
                 ssd1306_fontface_t fontface, uint8_t font_size,
                 ssd1306_framebuffer_box_t *bounding_box);
@@ -184,7 +184,7 @@ ssize_t ssd1306_framebuffer_draw_text(ssd1306_framebuffer_t *fbp,
 // options and this function allows you to do that. the above function is the
 // same as the below function with the options as NULL
 ssize_t ssd1306_framebuffer_draw_text_extra(ssd1306_framebuffer_t *fbp,
-                const uint8_t *str, size_t slen,
+                const char *str, size_t slen,
                 uint8_t x, uint8_t y,
                 ssd1306_fontface_t fontface, uint8_t font_size,
                 const ssd1306_graphics_options_t *opts, size_t num_opts, ssd1306_framebuffer_box_t *bounding_box);

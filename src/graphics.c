@@ -613,7 +613,7 @@ int8_t ssd1306_framebuffer_get_pixel(const ssd1306_framebuffer_t *fbp, uint8_t x
 }
 
 ssize_t ssd1306_framebuffer_draw_text(ssd1306_framebuffer_t *fbp,
-                const uint8_t *str, size_t slen,
+                const char *str, size_t slen,
                 uint8_t x, uint8_t y, ssd1306_fontface_t fontface,
                 uint8_t font_size, ssd1306_framebuffer_box_t *bbox)
 {
@@ -629,7 +629,7 @@ ssize_t ssd1306_framebuffer_draw_text(ssd1306_framebuffer_t *fbp,
 }
 
 ssize_t ssd1306_framebuffer_draw_text_extra(ssd1306_framebuffer_t *fbp,
-                const uint8_t *str, size_t slen,
+                const char *str, size_t slen,
                 uint8_t x, uint8_t y, ssd1306_fontface_t fontface,
                 uint8_t font_size,
                 const ssd1306_graphics_options_t *opts, size_t num_opts,
