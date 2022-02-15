@@ -144,7 +144,7 @@ AS_IF([test "x$with_libunistring" = "xyes"], [
     PKG_CHECK_MODULES([UNISTRING], [libunistring], 
                       [
                        use_libunistring=true
-                       AC_DEFINE([HAVE_EV_H], [1], [Have libunistring.h])
+                       AC_DEFINE([HAVE_UNISTR_H], [1], [Have libunistring.h])
                       ],
                       [
                        AC_CHECK_HEADERS([unistr.h], [use_libunistring=true], [use_libunistring=false])

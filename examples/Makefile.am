@@ -10,7 +10,13 @@ test_i2c_128x32_SOURCES=i2c_128x32_graphics.c
 test_i2c_128x32_LDADD=$(SSD1306_LIB)
 
 test_fb_graphics_SOURCES=fb_graphics.c
+test_fb_graphics_CFLAGS=
 test_fb_graphics_LDADD=$(SSD1306_LIB)
+
+if HAVE_UNISTRING
+test_fb_graphics_CFLAGS+=$(UNISTRING_CFLAGS)
+test_fb_graphics_LDADD+=$(UNISTRING_LIBS)
+endif
 
 test_draw_line_SOURCES=draw_line.c
 test_draw_line_LDADD=$(SSD1306_LIB)

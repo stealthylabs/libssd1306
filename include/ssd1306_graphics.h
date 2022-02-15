@@ -29,6 +29,9 @@
 #ifdef LIBSSD1306_HAVE_STDLIB_H
 #include <stdlib.h>
 #endif
+#ifdef LIBSSD1306_HAVE_UNISTR_H
+#include <unistr.h>
+#endif
 
 #ifdef __cplusplus
 extern "C" {
@@ -170,6 +173,7 @@ typedef struct {
     uint8_t right;
 } ssd1306_framebuffer_box_t;
 
+// These functions are for pure ASCII text only.
 // returns 0 if the task succeeded and sets the bounding box pixel values
 // returns -1 if error occurred loading fonts or anything else
 // if the bounding_box is set, it returns the pixel coordinates of the drawing
@@ -188,6 +192,38 @@ ssize_t ssd1306_framebuffer_draw_text_extra(ssd1306_framebuffer_t *fbp,
                 uint8_t x, uint8_t y,
                 ssd1306_fontface_t fontface, uint8_t font_size,
                 const ssd1306_graphics_options_t *opts, size_t num_opts, ssd1306_framebuffer_box_t *bounding_box);
+
+//These functions are for UTF-32 text. They use libunistring.h
+//and if you configure the library without libunistring.h then this function
+//will not be compiled.
+#ifdef LIBSSD1306_HAVE_UNISTR_H
+// this function will check for a string to be well-formed UTF-8.
+// if the string is not a UTF-8 string, it will return an error.
+// Internally it converts the UTF-8 string to a UTF-32 string and prints in
+// UTF-32 mode
+ssize_t ssd1306_framebuffer_draw_text_utf8(ssd1306_framebuffer_t *fbp,
+                const uint8_t *str, size_t slen,
+                uint8_t x, uint8_t y,
+                ssd1306_fontface_t fontface, uint8_t font_size,
+                const ssd1306_graphics_options_t *opts, size_t num_opts, ssd1306_framebuffer_box_t *bounding_box);
+// this function will check for a string to be well-formed UTF-16.
+// if the string is not a UTF-16 string, it will return an error.
+// Internally it converts the UTF-16 string to a UTF-32 string and prints in
+// UTF-32 mode
+ssize_t ssd1306_framebuffer_draw_text_utf16(ssd1306_framebuffer_t *fbp,
+                const uint16_t *str, size_t slen,
+                uint8_t x, uint8_t y,
+                ssd1306_fontface_t fontface, uint8_t font_size,
+                const ssd1306_graphics_options_t *opts, size_t num_opts, ssd1306_framebuffer_box_t *bounding_box);
+// this function will check for a string to be well-formed UTF-32.
+// if the string is not a UTF-32 string, it will return an error.
+ssize_t ssd1306_framebuffer_draw_text_utf32(ssd1306_framebuffer_t *fbp,
+                const uint32_t *str, size_t slen,
+                uint8_t x, uint8_t y,
+                ssd1306_fontface_t fontface, uint8_t font_size,
+                const ssd1306_graphics_options_t *opts, size_t num_opts, ssd1306_framebuffer_box_t *bounding_box);
+#endif
+
 
 // draw a line using Bresenham's line algorithm. returns 0 on success and -1 on
 // failure. if the (x0,y0) or (x1,y1) coordinates are outside the width and

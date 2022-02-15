@@ -73,6 +73,33 @@ int main()
         opts[1].value.rotation_degrees = 30;
         ssd1306_framebuffer_draw_text_extra(fbp, defstr, 0, 32, 32, SSD1306_FONT_DEFAULT, 4, opts, 2, &bbox);
         ssd1306_framebuffer_bitdump(fbp);
+        /* if library is compiled with libunistring */
+#ifdef LIBSSD1306_HAVE_UNISTR_H
+        const char *mycstr = "å,ä, ö";
+        size_t myclen = strlen(mycstr);
+        fprintf(errp->err_fp, "String: %s length: %zu\n", mycstr, myclen);
+        fprintf(errp->err_fp, "DEBUG: Testing in utf32 mode\n");
+        size_t mylen32 = 0;
+        // we need to convert the C string to UTF-32 string.
+        uint32_t *mystr32 = u8_to_u32((const uint8_t *)mycstr, myclen, NULL, &mylen32);
+        ssd1306_framebuffer_clear(fbp);
+        if (!(ssd1306_framebuffer_draw_text_utf32(fbp, mystr32, mylen32, 32, 32, SSD1306_FONT_DEFAULT, 4, NULL, 0, &bbox) < 0)) {
+            ssd1306_framebuffer_bitdump(fbp);
+        }
+        free(mystr32);
+        fprintf(errp->err_fp, "DEBUG: Testing in utf8 mode\n");
+        // directly use the C-string as intended
+        ssd1306_framebuffer_clear(fbp);
+        if (!(ssd1306_framebuffer_draw_text_utf8(fbp, mycstr, myclen, 32, 32, SSD1306_FONT_DEFAULT, 4, NULL, 0, &bbox) < 0)) {
+            ssd1306_framebuffer_bitdump(fbp);
+        }
+        // directly use the C-string as intended
+        fprintf(errp->err_fp, "DEBUG: Testing in char mode\n");
+        ssd1306_framebuffer_clear(fbp);
+        if (!(ssd1306_framebuffer_draw_text_extra(fbp, "A Å", 0, 32, 32, SSD1306_FONT_DEFAULT, 4, NULL, 0, &bbox) < 0)) {
+            ssd1306_framebuffer_bitdump(fbp);
+        }
+#endif /* LIBSSD1306_HAVE_UNISTR_H */
     } while (0);
     if (fbp)
         ssd1306_framebuffer_destroy(fbp);

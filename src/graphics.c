@@ -207,7 +207,7 @@ static void ssd1306_font_destroy(ssd1306_font_t *font, ssd1306_err_t *err)
 
 static int ssd1306_font_render_string(ssd1306_framebuffer_t *fbp,
         const char *font_file, ssd1306_fontface_t font_idx, uint8_t font_size,
-        const uint8_t *str, size_t slen,
+        const void *str, size_t slen, size_t chsz,
         uint16_t x, uint16_t y,
         int16_t rotation_degrees, uint8_t rotate_pixel,
         ssd1306_framebuffer_box_t *bbox)
@@ -277,9 +277,19 @@ static int ssd1306_font_render_string(ssd1306_framebuffer_t *fbp,
                         // no/identity transform
                         FT_Set_Transform(face, NULL, &pen);
                     }
+                    FT_ULong cc;
+                    if (chsz == sizeof(char)) {
+                        // ascii
+                        const uint8_t *astr = (const uint8_t *)str;
+                        cc = astr[idx];
+                    } else {
+                        // utf32
+                        const uint32_t *astr = (const uint32_t *)str;
+                        cc = astr[idx];
+                    }
                     // these are the same
                     if (0) {
-                        FT_UInt glyph_idx = FT_Get_Char_Index(face, str[idx]);
+                        FT_UInt glyph_idx = FT_Get_Char_Index(face, cc);
                         ferr = FT_Load_Glyph(face, glyph_idx, FT_LOAD_DEFAULT);
                         if (ferr) {
                             fprintf(err_fp, "WARN: Freetype FT_Load_Glyph() error: %d (%s)\n",
@@ -293,10 +303,10 @@ static int ssd1306_font_render_string(ssd1306_framebuffer_t *fbp,
                             continue; // ignore error
                         }
                     } else {
-                        ferr = FT_Load_Char(face, str[idx], FT_LOAD_RENDER);
+                        ferr = FT_Load_Char(face, cc, FT_LOAD_RENDER);
                         if (ferr) {
                             fprintf(err_fp, "WARN: Freetype FT_Load_Char(0x%x) error: %d (%s)\n",
-                                    str[idx], ferr, FT_Error_String(ferr));
+                                    cc, ferr, FT_Error_String(ferr));
                             continue; // ignore error
                         }
                     }
@@ -612,21 +622,220 @@ int8_t ssd1306_framebuffer_get_pixel(const ssd1306_framebuffer_t *fbp, uint8_t x
     return -1;
 }
 
-ssize_t ssd1306_framebuffer_draw_text(ssd1306_framebuffer_t *fbp,
+static void ssd1306_framebuffer_draw_text_options_handler(
+            const ssd1306_graphics_options_t *opts, size_t num_opts,
+            const char **font_file_ptr,
+            uint8_t *rotate_pixel_ptr,
+            int16_t *rotation_degrees_ptr,
+            FILE *err_fp
+        )
+{
+    const char *font_file = NULL;
+    uint8_t rotate_pixel = 0;
+    int16_t rotation_degrees = 0;
+    if (opts != NULL && num_opts > 0) {
+        for(size_t i = 0; i < num_opts; ++i) {
+            switch (opts[i].type) {
+                case SSD1306_OPT_FONT_FILE:
+                    if (opts[i].value.font_file != NULL && font_file == NULL) {
+                        font_file = opts[i].value.font_file;
+                    }
+                    break;
+                case SSD1306_OPT_ROTATE_FONT:
+                    if (opts[i].value.rotation_degrees != 0) {
+                        rotation_degrees = opts[i].value.rotation_degrees;
+                    }
+                    break;
+                case SSD1306_OPT_ROTATE_PIXEL:
+                    if (opts[i].value.rotation_degrees % 90 == 0) {
+                        switch ((opts[i].value.rotation_degrees % 360)) {
+                            case 90: rotate_pixel = 1; break;
+                            case 180: rotate_pixel = 2; break;
+                            case 270: rotate_pixel = 3; break;
+                            default: rotate_pixel = 0; break;
+                        }
+                    } else {
+                        fprintf(err_fp, "WARN: SSD1306_OPT_ROTATE_PIXEL only accepts rotation_degrees in multiples of 90\n");
+                        rotate_pixel = 0;
+                    }
+                    break;
+                default:
+                    /* ignore */
+                    break;
+            }
+        }
+    }
+    if (font_file_ptr)
+        *font_file_ptr = font_file;
+    if (rotate_pixel_ptr)
+        *rotate_pixel_ptr = rotate_pixel;
+    if (rotation_degrees)
+        *rotation_degrees_ptr = rotation_degrees;
+}
+
+#ifdef LIBSSD1306_HAVE_UNISTR_H
+ssize_t ssd1306_framebuffer_draw_text_extra(ssd1306_framebuffer_t *fbp,
                 const char *str, size_t slen,
                 uint8_t x, uint8_t y, ssd1306_fontface_t fontface,
-                uint8_t font_size, ssd1306_framebuffer_box_t *bbox)
+                uint8_t font_size,
+                const ssd1306_graphics_options_t *opts, size_t num_opts,
+                ssd1306_framebuffer_box_t *bbox)
 {
-    if (fontface < SSD1306_FONT_CUSTOM) {
-        return ssd1306_framebuffer_draw_text_extra(fbp, str, slen, x, y,
-                    fontface, font_size, NULL, 0, bbox);
-    } else {
-        FILE *err_fp = SSD1306_FB_GET_ERRFP(fbp);
-        fprintf(err_fp, "ERROR: Fontface cannot be %s in %s(). use %s_extra()\n",
-                ssd1306_fontface_names[(size_t)fontface], __func__, __func__);
-        return -1;
-    }
+    return ssd1306_framebuffer_draw_text_utf8(fbp, (const uint8_t *)str, slen, x, y, fontface,
+                    font_size, opts, num_opts, bbox);
 }
+
+ssize_t ssd1306_framebuffer_draw_text_utf8(ssd1306_framebuffer_t *fbp,
+                const uint8_t *str, size_t slen,
+                uint8_t x, uint8_t y, ssd1306_fontface_t fontface,
+                uint8_t font_size,
+                const ssd1306_graphics_options_t *opts, size_t num_opts,
+                ssd1306_framebuffer_box_t *bbox)
+{
+    FILE *err_fp = SSD1306_FB_GET_ERRFP(fbp);
+    if (fbp && str) {
+        if (slen == 0) {
+            slen = u8_strlen(str);
+            if (slen == 0) {
+                fprintf(err_fp, "WARN: input string in UTF-18 does not have a length, cannot proceed\n");
+                return -1;
+            }
+        }
+        // check for UTF-8
+        const uint8_t *sptr = u8_check(str, slen); 
+        if (sptr != NULL) {
+            size_t vlen = sptr - str;
+            fprintf(err_fp, "WARN: input string in UTF-8 is not well formed. Starting string location 0x%x Malformed string location 0x%x Valid length: %zu Input length: %zu\n", str, sptr, vlen, slen);
+            // update slen to use vlen
+            slen = vlen;
+            if (vlen == 0) {
+                fprintf(err_fp, "WARN: input string in UTF-8 does not have a length, cannot proceed\n");
+                return -1;
+            }
+        }
+        size_t slen32 = 0;
+        uint32_t *str32 = u8_to_u32((const uint8_t *)str, slen, NULL, &slen32);
+        if (!str32 || slen32 == 0) {
+            int serrno = errno;
+            char serrbuf[256];
+            memset(serrbuf, 0, sizeof(serrbuf));
+            strerror_r(serrno, serrbuf, sizeof(serrbuf));
+            serrbuf[255] = '\0';
+            fprintf(err_fp, "ERROR: Failed to convert UTF-8 to UTF-32 string for drawing. Error: %s\n", serrbuf);
+            return -1;
+        }
+        int rc = ssd1306_framebuffer_draw_text_utf32(fbp, str32, slen32, 
+                        x, y, fontface, font_size, opts, num_opts, bbox);
+        // do not forget to dealloc
+        free(str32);
+        return rc;
+    }
+    return -1;
+}
+ssize_t ssd1306_framebuffer_draw_text_utf16(ssd1306_framebuffer_t *fbp,
+                const uint16_t *str, size_t slen,
+                uint8_t x, uint8_t y, ssd1306_fontface_t fontface,
+                uint8_t font_size,
+                const ssd1306_graphics_options_t *opts, size_t num_opts,
+                ssd1306_framebuffer_box_t *bbox)
+{
+    FILE *err_fp = SSD1306_FB_GET_ERRFP(fbp);
+    if (fbp && str) {
+        if (slen == 0) {
+            slen = u16_strlen(str);
+            if (slen == 0) {
+                fprintf(err_fp, "WARN: input string in UTF-16 does not have a length, cannot proceed\n");
+                return -1;
+            }
+        }
+        // check for UTF-16
+        const uint16_t *sptr = u16_check(str, slen); 
+        if (sptr != NULL) {
+            size_t vlen = sptr - str;
+            fprintf(err_fp, "WARN: input string in UTF-16 is not well formed. Starting string location 0x%x Malformed string location 0x%x Valid length: %zu Input length: %zu\n", str, sptr, vlen, slen);
+            // update slen to use vlen
+            slen = vlen;
+            if (vlen == 0) {
+                fprintf(err_fp, "WARN: input string in UTF-16 does not have a length, cannot proceed\n");
+                return -1;
+            }
+        }
+        size_t slen32 = 0;
+        uint32_t *str32 = u16_to_u32(str, slen, NULL, &slen32);
+        if (!str32 || slen32 == 0) {
+            int serrno = errno;
+            char serrbuf[256];
+            memset(serrbuf, 0, sizeof(serrbuf));
+            strerror_r(serrno, serrbuf, sizeof(serrbuf));
+            serrbuf[255] = '\0';
+            fprintf(err_fp, "ERROR: Failed to convert UTF-16 to UTF-32 string for drawing. Error: %s\n", serrbuf);
+            return -1;
+        }
+        int rc = ssd1306_framebuffer_draw_text_utf32(fbp, str32, slen32, 
+                        x, y, fontface, font_size, opts, num_opts, bbox);
+        // do not forget to dealloc
+        free(str32);
+        return rc;
+    }
+    return -1;
+}
+
+ssize_t ssd1306_framebuffer_draw_text_utf32(ssd1306_framebuffer_t *fbp,
+                const uint32_t *str, size_t slen,
+                uint8_t x, uint8_t y, ssd1306_fontface_t fontface,
+                uint8_t font_size,
+                const ssd1306_graphics_options_t *opts, size_t num_opts,
+                ssd1306_framebuffer_box_t *bbox)
+{
+    FILE *err_fp = SSD1306_FB_GET_ERRFP(fbp);
+    if (fbp && str) {
+        if (slen == 0) {
+            slen = u32_strlen(str);
+            if (slen == 0) {
+                fprintf(err_fp, "WARN: input string in UTF-32 does not have a length, cannot proceed\n");
+                return -1;
+            }
+        }
+        // check for UTF-32
+        const uint32_t *sptr = u32_check(str, slen); 
+        if (sptr != NULL) {
+            size_t vlen = sptr - str;
+            fprintf(err_fp, "WARN: input string in UTF-32 is not well formed. Starting string location 0x%x Malformed string location 0x%x Valid length: %zu Input length: %zu\n", str, sptr, vlen, slen);
+            // update slen to use vlen
+            slen = vlen;
+            if (vlen == 0) {
+                fprintf(err_fp, "WARN: input string in UTF-32 does not have a length, cannot proceed\n");
+                return -1;
+            }
+        }
+        // handle options
+        const char *font_file = NULL;
+        uint8_t rotate_pixel = 0;
+        int16_t rotation_degrees = 0;
+        ssd1306_framebuffer_draw_text_options_handler(opts, num_opts, &font_file,
+                        &rotate_pixel, &rotation_degrees, err_fp);
+        if (fontface >= SSD1306_FONT_CUSTOM) {
+            if (font_file != NULL) {
+                return ssd1306_font_render_string(fbp,
+                        font_file, SSD1306_FONT_CUSTOM, font_size,
+                        str, slen, sizeof(uint32_t), (uint16_t)x, (uint16_t)y,
+                        rotation_degrees, rotate_pixel, bbox);
+            } else {
+                fprintf(err_fp, "ERROR: If using %s then you need to use SSD1306_OPT_FONT_FILE\n",
+                        ssd1306_fontface_names[SSD1306_FONT_CUSTOM]);
+                return -1;
+            }
+        } else {
+            return ssd1306_font_render_string(fbp,
+                NULL, fontface, font_size,
+                str, slen, sizeof(uint32_t), (uint16_t)x, (uint16_t)y,
+                rotation_degrees, rotate_pixel, bbox);
+        }
+    }
+    return -1;
+}
+
+#else /* if the user did not compile with libunistring */
 
 ssize_t ssd1306_framebuffer_draw_text_extra(ssd1306_framebuffer_t *fbp,
                 const char *str, size_t slen,
@@ -644,43 +853,13 @@ ssize_t ssd1306_framebuffer_draw_text_extra(ssd1306_framebuffer_t *fbp,
         const char *font_file = NULL;
         uint8_t rotate_pixel = 0;
         int16_t rotation_degrees = 0;
-        if (opts != NULL && num_opts > 0) {
-            for(size_t i = 0; i < num_opts; ++i) {
-                switch (opts[i].type) {
-                case SSD1306_OPT_FONT_FILE:
-                    if (opts[i].value.font_file != NULL && font_file == NULL) {
-                        font_file = opts[i].value.font_file;
-                    }
-                    break;
-                case SSD1306_OPT_ROTATE_FONT:
-                    if (opts[i].value.rotation_degrees != 0) {
-                        rotation_degrees = opts[i].value.rotation_degrees;
-                    }
-                    break;
-                case SSD1306_OPT_ROTATE_PIXEL:
-                    if (opts[i].value.rotation_degrees % 90 == 0) {
-                        switch ((opts[i].value.rotation_degrees % 360)) {
-                        case 90: rotate_pixel = 1; break;
-                        case 180: rotate_pixel = 2; break;
-                        case 270: rotate_pixel = 3; break;
-                        default: rotate_pixel = 0; break;
-                        }
-                    } else {
-                        fprintf(err_fp, "WARN: SSD1306_OPT_ROTATE_PIXEL only accepts rotation_degrees in multiples of 90\n");
-                        rotate_pixel = 0;
-                    }
-                    break;
-                default:
-                    /* ignore */
-                    break;
-                }
-            }
-        }
+        ssd1306_framebuffer_draw_text_options_handler(opts, num_opts, &font_file,
+                        &rotate_pixel, &rotation_degrees, err_fp);
         if (fontface >= SSD1306_FONT_CUSTOM) {
             if (font_file != NULL) {
                 return ssd1306_font_render_string(fbp,
                         font_file, SSD1306_FONT_CUSTOM, font_size,
-                        str, slen, (uint16_t)x, (uint16_t)y,
+                        str, slen, sizeof(char), (uint16_t)x, (uint16_t)y,
                         rotation_degrees, rotate_pixel, bbox);
             } else {
                 fprintf(err_fp, "ERROR: If using %s then you need to use SSD1306_OPT_FONT_FILE\n",
@@ -690,11 +869,29 @@ ssize_t ssd1306_framebuffer_draw_text_extra(ssd1306_framebuffer_t *fbp,
         } else {
             return ssd1306_font_render_string(fbp,
                 NULL, fontface, font_size,
-                str, slen, (uint16_t)x, (uint16_t)y,
+                str, slen, sizeof(char), (uint16_t)x, (uint16_t)y,
                 rotation_degrees, rotate_pixel, bbox);
         }
     }
     return -1;
+}
+
+#endif /* LIBSSD1306_HAVE_UNISTR_H */
+
+ssize_t ssd1306_framebuffer_draw_text(ssd1306_framebuffer_t *fbp,
+                const char *str, size_t slen,
+                uint8_t x, uint8_t y, ssd1306_fontface_t fontface,
+                uint8_t font_size, ssd1306_framebuffer_box_t *bbox)
+{
+    if (fontface < SSD1306_FONT_CUSTOM) {
+        return ssd1306_framebuffer_draw_text_extra(fbp, str, slen, x, y,
+                    fontface, font_size, NULL, 0, bbox);
+    } else {
+        FILE *err_fp = SSD1306_FB_GET_ERRFP(fbp);
+        fprintf(err_fp, "ERROR: Fontface cannot be %s in %s(). use %s_extra()\n",
+                ssd1306_fontface_names[(size_t)fontface], __func__, __func__);
+        return -1;
+    }
 }
 
 int ssd1306_framebuffer_draw_line(ssd1306_framebuffer_t *fbp,
