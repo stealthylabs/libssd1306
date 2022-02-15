@@ -136,7 +136,7 @@ AC_SUBST([LIBEV_CFLAGS])
 AC_SUBST([LIBEV_LIBS])
 
 AC_ARG_WITH([libunistring],
-              [AS_HELP_STRING([--without-libunistring], [build examples without libunistring support @<:@default=yes@:>@])],
+              [AS_HELP_STRING([--without-libunistring], [build library without libunistring support @<:@default=yes@:>@])],
               [with_libunistring=no],
               [with_libunistring=yes])
 AS_IF([test "x$with_libunistring" = "xyes"], [
@@ -147,7 +147,7 @@ AS_IF([test "x$with_libunistring" = "xyes"], [
                        AC_DEFINE([HAVE_EV_H], [1], [Have libunistring.h])
                       ],
                       [
-                       AC_CHECK_HEADERS([unistring.h], [use_libunistring=true], [use_libunistring=false])
+                       AC_CHECK_HEADERS([unistr.h], [use_libunistring=true], [use_libunistring=false])
                        AC_CHECK_LIB([unistring], [u8_to_u32], [use_libunistring=true], [use_libunistring=false])
                        UNISTRING_LIBS="-lunistring"
                        echo "Setting UNISTRING_LIBS to $UNISTRING_LIBS"
