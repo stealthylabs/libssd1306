@@ -303,7 +303,7 @@ static int ssd1306_font_render_string(ssd1306_framebuffer_t *fbp,
                     //draw bitmap
                     FT_Bitmap *bmap = &slot->bitmap;
                     FT_Int x_bmap = x + slot->bitmap_left;
-                    FT_Int y_bmap = y;
+                    FT_Int y_bmap = y - slot->bitmap_top;
                     FT_Int xmax_bmap = x_bmap + bmap->width;
                     FT_Int ymax_bmap = y_bmap + bmap->rows;
                     // find the max height of the font
