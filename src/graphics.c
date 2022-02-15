@@ -206,7 +206,8 @@ static void ssd1306_font_destroy(ssd1306_font_t *font, ssd1306_err_t *err)
 }
 
 static int ssd1306_font_render_string(ssd1306_framebuffer_t *fbp,
-        const char *font_file, ssd1306_fontface_t font_idx, uint8_t font_size, const char *str, size_t slen,
+        const char *font_file, ssd1306_fontface_t font_idx, uint8_t font_size,
+        const uint8_t *str, size_t slen,
         uint16_t x, uint16_t y,
         int16_t rotation_degrees, uint8_t rotate_pixel,
         ssd1306_framebuffer_box_t *bbox)
@@ -251,6 +252,7 @@ static int ssd1306_font_render_string(ssd1306_framebuffer_t *fbp,
                 FT_GlyphSlot slot = face->glyph;
                 FT_Matrix transformer = { 0 };
                 FT_Vector pen = { 0 };
+                FT_Select_Charmap(face, FT_ENCODING_UNICODE);
                 ferr = FT_Set_Char_Size(face, 0, font_size * 64, 300, 300);
                 if (ferr) {
                     fprintf(err_fp, "ERROR: FreeType FT_Set_Char_Size(%s, %d) error: %d (%s)\n",
@@ -293,7 +295,7 @@ static int ssd1306_font_render_string(ssd1306_framebuffer_t *fbp,
                     } else {
                         ferr = FT_Load_Char(face, str[idx], FT_LOAD_RENDER);
                         if (ferr) {
-                            fprintf(err_fp, "WARN: Freetype FT_Load_Char(%c) error: %d (%s)\n",
+                            fprintf(err_fp, "WARN: Freetype FT_Load_Char(0x%x) error: %d (%s)\n",
                                     str[idx], ferr, FT_Error_String(ferr));
                             continue; // ignore error
                         }
@@ -611,7 +613,7 @@ int8_t ssd1306_framebuffer_get_pixel(const ssd1306_framebuffer_t *fbp, uint8_t x
 }
 
 ssize_t ssd1306_framebuffer_draw_text(ssd1306_framebuffer_t *fbp,
-                const char *str, size_t slen,
+                const uint8_t *str, size_t slen,
                 uint8_t x, uint8_t y, ssd1306_fontface_t fontface,
                 uint8_t font_size, ssd1306_framebuffer_box_t *bbox)
 {
@@ -627,7 +629,7 @@ ssize_t ssd1306_framebuffer_draw_text(ssd1306_framebuffer_t *fbp,
 }
 
 ssize_t ssd1306_framebuffer_draw_text_extra(ssd1306_framebuffer_t *fbp,
-                const char *str, size_t slen,
+                const uint8_t *str, size_t slen,
                 uint8_t x, uint8_t y, ssd1306_fontface_t fontface,
                 uint8_t font_size,
                 const ssd1306_graphics_options_t *opts, size_t num_opts,

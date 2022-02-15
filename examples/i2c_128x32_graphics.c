@@ -31,7 +31,7 @@ int main ()
     ssd1306_framebuffer_bitdump(fbp);
     ssd1306_framebuffer_clear(fbp);
     ssd1306_framebuffer_box_t bbox;
-    ssd1306_framebuffer_draw_text(fbp, "ABCDeF", 0, 32, 16, SSD1306_FONT_DEFAULT, 4, &bbox);
+    ssd1306_framebuffer_draw_text(fbp, (const uint8_t *)"ABCDeF", 0, 32, 16, SSD1306_FONT_DEFAULT, 4, &bbox);
     ssd1306_framebuffer_bitdump(fbp);
     ssd1306_i2c_display_update(oled, fbp);
     sleep(3);
@@ -57,7 +57,7 @@ int main ()
     ssd1306_i2c_display_update(oled, fbp);
     sleep(3);
     ssd1306_framebuffer_clear(fbp);
-    ssd1306_framebuffer_draw_text(fbp, "A", 0, 0, 0, SSD1306_FONT_DEFAULT, 10, &bbox);
+    ssd1306_framebuffer_draw_text(fbp, (const uint8_t *)"A", 0, 0, 0, SSD1306_FONT_DEFAULT, 10, &bbox);
     ssd1306_framebuffer_bitdump(fbp);
     ssd1306_i2c_display_update(oled, fbp);
     sleep(3);
@@ -69,7 +69,7 @@ int main ()
     opts[2].type = SSD1306_OPT_ROTATE_FONT;
     opts[2].value.rotation_degrees = 30;
     ssd1306_framebuffer_clear(fbp);
-    ssd1306_framebuffer_draw_text_extra(fbp, "a b c d e", 0, 32, 15, SSD1306_FONT_CUSTOM, 4, opts, 3, &bbox);
+    ssd1306_framebuffer_draw_text_extra(fbp, (const uint8_t *)"a b c d e", 0, 32, 15, SSD1306_FONT_CUSTOM, 4, opts, 3, &bbox);
     ssd1306_framebuffer_bitdump(fbp);
     ssd1306_i2c_display_update(oled, fbp);
     sleep(3);
