@@ -30,6 +30,7 @@ Another reason for using this C library is to be able to integrate this display
 with libraries like `libev` or similar event-based libraries,  and control
 the display using events and keeping the power consumption low on such devices.
 
+For Unicode support, the user must install `libunistring-dev`.
 
 ## BUILD and TEST
 
@@ -41,7 +42,7 @@ Install Pre-requisties first.
 $ sudo apt-get -y install libfreetype6-dev fonts-freefont-ttf ttf-bitstream-vera \
         autoconf automake libtool autotools-dev build-essential pkg-config
 ### optional pre-requisites
-$ sudo apt-get -y install libev-dev
+$ sudo apt-get -y install libev-dev libunistring-dev
 ```
 
 You may install several other font libraries such as Microsoft fonts which we
@@ -119,4 +120,4 @@ $ ./libtool --mode=execute valgrind --tool=memcheck ./examples/test_fb_graphics
 
 ## COPYRIGHT
 
-&copy; 2020. Stealthy Labs LLC. All Rights Reserved.
+&copy; 2020-2021. Stealthy Labs LLC. All Rights Reserved.
