@@ -92,7 +92,7 @@ $ make check
 $ ./examples/test_fb_graphics
 
 ### if you just want to run a single test on a connected SSD1306 I<sup>2</sup>C device  manually
-$ ./examples/test_i2c_128x132
+$ ./examples/test_i2c_128x32
 
 ### if you want to run the clock display for 30 seconds
 $ ./examples/test_libev_clock
