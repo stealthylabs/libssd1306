@@ -81,7 +81,7 @@ AC_ARG_ENABLE([debug],
               [debugit="$enableval"],
               [debugit=no])
 AC_MSG_RESULT([$debugit])
-AM_CFLAGS="-Wall -Wextra -Wno-uninitialized -fPIC -pedantic -posix -std=c11 -D_DEFAULT_SOURCE -D_REENTRANT"
+AM_CFLAGS="-Wall -Wextra -Wno-uninitialized -fPIC -pedantic -std=c11 -D_DEFAULT_SOURCE -D_REENTRANT"
 
 if test x"$debugit" = x"yes"; then
     AC_DEFINE([DEBUG],[],[Debug Mode])
