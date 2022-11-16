@@ -103,14 +103,14 @@ static const char *FT_Error_String(FT_Error err)
 #endif
 
 static const char *ssd1306_fontface_paths[SSD1306_FONT_MAX + 1] = {
-    "/usr/share/fonts/truetype/freefont/FreeMono.ttf",
-    "/usr/share/fonts/truetype/freefont/FreeMonoBold.ttf",
-    "/usr/share/fonts/truetype/freefont/FreeMonoOblique.ttf",
-    "/usr/share/fonts/truetype/freefont/FreeMonoBoldOblique.ttf",
     "/usr/share/fonts/truetype/ttf-bitstream-vera/Vera.ttf",
     "/usr/share/fonts/truetype/ttf-bitstream-vera/VeraBd.ttf",
     "/usr/share/fonts/truetype/ttf-bitstream-vera/VeraIt.ttf",
     "/usr/share/fonts/truetype/ttf-bitstream-vera/VeraBI.ttf",
+    "/usr/share/fonts/truetype/freefont/FreeMono.ttf",
+    "/usr/share/fonts/truetype/freefont/FreeMonoBold.ttf",
+    "/usr/share/fonts/truetype/freefont/FreeMonoOblique.ttf",
+    "/usr/share/fonts/truetype/freefont/FreeMonoBoldOblique.ttf",
     NULL
 };
 static const char *ssd1306_fontface_names[SSD1306_FONT_MAX + 1] = {
