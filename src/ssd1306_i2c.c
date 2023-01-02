@@ -312,31 +312,51 @@ static size_t ssd1306_i2c_internal_get_cmd_bytes(ssd1306_i2c_cmd_t cmd,
     case SSD1306_I2C_CMD_SCROLL_ACTIVATE:
         cmdbuf[1] = 0x2F;
         break;
-
-    case SSD1306_I2C_CMD_LEFT_HORIZONTAL_SCROLL:
-        cmdbuf[0] = 0x27; //when I do not set this it does not work seems it should work like well, the other commands
-        cmdbuf[1] = 0x27; // when I do not set this it does not work seems it should work like well, the other commands
-        cmdbuf[2] = 0x00; //start
-        cmdbuf[3] = data[0]; //speed spec indicated several speeds I could only get fast and slow working
-        cmdbuf[4] = data[1]; // end
-        cmdbuf[5] = 0x0F;
-        cmdbuf[6] = 0x00;
-        cmdbuf[7] = 0Xff;
+    case SSD1306_I2C_CMD_SCROLL_LEFT_HORIZONTAL:
+    case SSD1306_I2C_CMD_SCROLL_RIGHT_HORIZONTAL:
+        if (cmd == SSD1306_I2C_CMD_SCROLL_LEFT_HORIZONTAL) {
+            cmdbuf[1] = 0x27; // 0b00100111 for left horizontal scroll
+        } else {
+            cmdbuf[1] = 0x26; // 0b00100110 for right horizontal scroll
+        }
+        cmdbuf[2] = 0x00; // dummy byte
+        cmdbuf[3] = (data && dlen > 0) ? (data[0] & 0x07) : 0x00; // 3-bit Start page address. Default 0b000
+        cmdbuf[4] = (data && dlen > 1) ? (data[1] & 0x07) : 0x00; // 3-bit scroll step in frame frequency
+        cmdbuf[5] = (data && dlen > 2) ? (data[2] & 0x07) : 0x07; // 3-bit end page address. default is last page
+        if (cmdbuf[5] < cmdbuf[3]) {
+            // end page must be larger or equal
+            // overwriting
+            cmdbuf[5] = cmdbuf[3];
+        }
+        cmdbuf[6] = 0x00; // dummy byte
+        cmdbuf[7] = 0XFF; // dummy byte
         sz = 8;
         break;
-
-    case SSD1306_I2C_CMD_RIGHT_HORIZONTAL_SCROLL:
-        cmdbuf[0] = 0x26; //when I do not set this it does not work, seems it should work like well, the other commands
-        cmdbuf[1] = 0x26; // when I do not set this it does not work seems it should work like well, the other commands
-        cmdbuf[2] = 0x00; //start
-        cmdbuf[3] = data[0]; //speed spec indicated several speeds I could only get fast and slow working
-        cmdbuf[4] = data[1]; // end
-        cmdbuf[5] = 0x0F;
-        cmdbuf[6] = 0x00;
-        cmdbuf[7] = 0Xff;
-        sz = 8;
+    case SSD1306_I2C_CMD_SCROLL_VERTICAL_LEFT_HORIZONTAL:
+    case SSD1306_I2C_CMD_SCROLL_VERTICAL_RIGHT_HORIZONTAL:
+        if (cmd == SSD1306_I2C_CMD_SCROLL_VERTICAL_LEFT_HORIZONTAL) {
+            cmdbuf[1] = 0x2A; // 0b00101010 for vertical and left horizontal scroll
+        } else {
+            cmdbuf[1] = 0x29; // 0b00101001 for vertical and right horizontal scroll
+        }
+        cmdbuf[2] = 0x00; // dummy byte
+        cmdbuf[3] = (data && dlen > 0) ? (data[0] & 0x07) : 0x00; // 3-bit Start page address. Default 0b000
+        cmdbuf[4] = (data && dlen > 1) ? (data[1] & 0x07) : 0x00; // 3-bit scroll step in frame frequency
+        cmdbuf[5] = (data && dlen > 2) ? (data[2] & 0x07) : 0x07; // 3-bit end page address. default is last page
+        if (cmdbuf[5] < cmdbuf[3]) {
+            // end page must be larger or equal
+            // overwriting
+            cmdbuf[5] = cmdbuf[3];
+        }
+        cmdbuf[6] = (data && dlen > 3) ? (data[3] & 0x3F) : 0x01; // 1-63 rows of vertical offset scrolling
+        sz = 7;
         break;
-
+    case SSD1306_I2C_CMD_SCROLL_VERTICAL_AREA:
+        cmdbuf[1] = 0xA3; //0b10100011
+        cmdbuf[2] = (data && dlen > 0) ? (data[0] & 0x3F) : 0x00; // no. of rows in top fixed area. 0 is RESET
+        cmdbuf[3] = (data && dlen > 1) ? (data[1] & 0x7F) : 0x40; // no. of rows in scroll area. 64 is RESET
+        sz = 4;
+        break;
     case SSD1306_I2C_CMD_NOP: // fallthrough
     default:
         cmdbuf[1] = 0xE3; // NOP

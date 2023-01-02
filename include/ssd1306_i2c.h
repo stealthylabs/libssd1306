@@ -68,9 +68,16 @@ typedef enum {
     SSD1306_I2C_CMD_ENABLE_CHARGE_PUMP, // enable charge pump regulator
     SSD1306_I2C_CMD_DISABLE_CHARGE_PUMP, // disable charge pump regulator
     SSD1306_I2C_CMD_SCROLL_DEACTIVATE,
-    SSD1306_I2C_CMD_SCROLL_ACTIVATE,
-    SSD1306_I2C_CMD_LEFT_HORIZONTAL_SCROLL,
-    SSD1306_I2C_CMD_RIGHT_HORIZONTAL_SCROLL
+    // for scroll, reasonable defaults are automatically setup by the function
+    // when these commands are invoked with NULL data pointers. however, the
+    // user must verify that those defaults are correct for their use case or
+    // must refer to the data sheets.
+    SSD1306_I2C_CMD_SCROLL_ACTIVATE, // activate scrolling
+    SSD1306_I2C_CMD_SCROLL_LEFT_HORIZONTAL, // perform left horizontal scroll
+    SSD1306_I2C_CMD_SCROLL_RIGHT_HORIZONTAL, // perform right horizontal scroll
+    SSD1306_I2C_CMD_SCROLL_VERTICAL_LEFT_HORIZONTAL, // perform vertical and left horizontal scroll
+    SSD1306_I2C_CMD_SCROLL_VERTICAL_RIGHT_HORIZONTAL, // perform vertical and right horizontal scroll
+    SSD1306_I2C_CMD_SCROLL_VERTICAL_AREA // set vertical scroll area.
 } ssd1306_i2c_cmd_t;
 
 int ssd1306_i2c_run_cmd(ssd1306_i2c_t *oled, // the ssd1306_i2c_t object
