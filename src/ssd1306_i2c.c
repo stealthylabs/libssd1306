@@ -312,6 +312,31 @@ static size_t ssd1306_i2c_internal_get_cmd_bytes(ssd1306_i2c_cmd_t cmd,
     case SSD1306_I2C_CMD_SCROLL_ACTIVATE:
         cmdbuf[1] = 0x2F;
         break;
+
+    case SSD1306_I2C_CMD_LEFT_HORIZONTAL_SCROLL:
+        cmdbuf[0] = 0x27; //when I do not set this it does not work seems it should work like well, the other commands
+        cmdbuf[1] = 0x27; // when I do not set this it does not work seems it should work like well, the other commands
+        cmdbuf[2] = 0x00; //start
+        cmdbuf[3] = data[0]; //speed spec indicated several speeds I could only get fast and slow working
+        cmdbuf[4] = data[1]; // end
+        cmdbuf[5] = 0x0F;
+        cmdbuf[6] = 0x00;
+        cmdbuf[7] = 0Xff;
+        sz = 8;
+        break;
+
+    case SSD1306_I2C_CMD_RIGHT_HORIZONTAL_SCROLL:
+        cmdbuf[0] = 0x26; //when I do not set this it does not work, seems it should work like well, the other commands
+        cmdbuf[1] = 0x26; // when I do not set this it does not work seems it should work like well, the other commands
+        cmdbuf[2] = 0x00; //start
+        cmdbuf[3] = data[0]; //speed spec indicated several speeds I could only get fast and slow working
+        cmdbuf[4] = data[1]; // end
+        cmdbuf[5] = 0x0F;
+        cmdbuf[6] = 0x00;
+        cmdbuf[7] = 0Xff;
+        sz = 8;
+        break;
+
     case SSD1306_I2C_CMD_NOP: // fallthrough
     default:
         cmdbuf[1] = 0xE3; // NOP

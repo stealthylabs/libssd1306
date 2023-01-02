@@ -68,7 +68,9 @@ typedef enum {
     SSD1306_I2C_CMD_ENABLE_CHARGE_PUMP, // enable charge pump regulator
     SSD1306_I2C_CMD_DISABLE_CHARGE_PUMP, // disable charge pump regulator
     SSD1306_I2C_CMD_SCROLL_DEACTIVATE,
-    SSD1306_I2C_CMD_SCROLL_ACTIVATE
+    SSD1306_I2C_CMD_SCROLL_ACTIVATE,
+    SSD1306_I2C_CMD_LEFT_HORIZONTAL_SCROLL,
+    SSD1306_I2C_CMD_RIGHT_HORIZONTAL_SCROLL
 } ssd1306_i2c_cmd_t;
 
 int ssd1306_i2c_run_cmd(ssd1306_i2c_t *oled, // the ssd1306_i2c_t object
