@@ -72,8 +72,9 @@ typedef enum {
     // when these commands are invoked with NULL data pointers. however, the
     // user must verify that those defaults are correct for their use case or
     // must refer to the data sheets.
-    SSD1306_I2C_CMD_SCROLL_ACTIVATE, // activate scrolling
     SSD1306_I2C_CMD_SCROLL_LEFT_HORIZONTAL, // perform left horizontal scroll
+    // legacy enum value set to activate left horizontal scrolling automatically
+#define SSD1306_I2C_CMD_SCROLL_ACTIVATE SSD1306_I2C_CMD_SCROLL_LEFT_HORIZONTAL
     SSD1306_I2C_CMD_SCROLL_RIGHT_HORIZONTAL, // perform right horizontal scroll
     SSD1306_I2C_CMD_SCROLL_VERTICAL_LEFT_HORIZONTAL, // perform vertical and left horizontal scroll
     SSD1306_I2C_CMD_SCROLL_VERTICAL_RIGHT_HORIZONTAL, // perform vertical and right horizontal scroll

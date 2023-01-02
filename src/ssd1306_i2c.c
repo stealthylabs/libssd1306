@@ -309,53 +309,59 @@ static size_t ssd1306_i2c_internal_get_cmd_bytes(ssd1306_i2c_cmd_t cmd,
     case SSD1306_I2C_CMD_SCROLL_DEACTIVATE:
         cmdbuf[1] = 0x2E;
         break;
-    case SSD1306_I2C_CMD_SCROLL_ACTIVATE:
-        cmdbuf[1] = 0x2F;
-        break;
     case SSD1306_I2C_CMD_SCROLL_LEFT_HORIZONTAL:
     case SSD1306_I2C_CMD_SCROLL_RIGHT_HORIZONTAL:
+        // perform the scroll settings
         if (cmd == SSD1306_I2C_CMD_SCROLL_LEFT_HORIZONTAL) {
-            cmdbuf[1] = 0x27; // 0b00100111 for left horizontal scroll
+            cmdbuf[1] = 0x27;// deactivate existing settings
+            cmdbuf[2] = 0x27; // 0b00100111 for left horizontal scroll
         } else {
-            cmdbuf[1] = 0x26; // 0b00100110 for right horizontal scroll
+            cmdbuf[1] = 0x26;// deactivate existing settings
+            cmdbuf[2] = 0x26; // 0b00100110 for right horizontal scroll
         }
-        cmdbuf[2] = 0x00; // dummy byte
-        cmdbuf[3] = (data && dlen > 0) ? (data[0] & 0x07) : 0x00; // 3-bit Start page address. Default 0b000
-        cmdbuf[4] = (data && dlen > 1) ? (data[1] & 0x07) : 0x00; // 3-bit scroll step in frame frequency
-        cmdbuf[5] = (data && dlen > 2) ? (data[2] & 0x07) : 0x07; // 3-bit end page address. default is last page
-        if (cmdbuf[5] < cmdbuf[3]) {
+        cmdbuf[3] = 0x00; // dummy byte
+        cmdbuf[4] = (data && dlen > 0) ? (data[0] & 0x07) : 0x00; // 3-bit Start page address. Default 0b000
+        cmdbuf[5] = (data && dlen > 1) ? (data[1] & 0x07) : 0x00; // 3-bit scroll step in frame frequency
+        cmdbuf[6] = (data && dlen > 2) ? (data[2] & 0x07) : 0x07; // 3-bit end page address. default is last page
+        if (cmdbuf[6] < cmdbuf[4]) {
             // end page must be larger or equal
             // overwriting
-            cmdbuf[5] = cmdbuf[3];
+            cmdbuf[6] = cmdbuf[4];
         }
-        cmdbuf[6] = 0x00; // dummy byte
-        cmdbuf[7] = 0XFF; // dummy byte
-        sz = 8;
+        cmdbuf[7] = 0x00; // dummy byte
+        cmdbuf[8] = 0XFF; // dummy byte
+        cmdbuf[9] = 0x2F; // activate the scroll
+        sz = 10;
         break;
     case SSD1306_I2C_CMD_SCROLL_VERTICAL_LEFT_HORIZONTAL:
     case SSD1306_I2C_CMD_SCROLL_VERTICAL_RIGHT_HORIZONTAL:
         if (cmd == SSD1306_I2C_CMD_SCROLL_VERTICAL_LEFT_HORIZONTAL) {
             cmdbuf[1] = 0x2A; // 0b00101010 for vertical and left horizontal scroll
+            cmdbuf[2] = 0x2A; // 0b00101010 for vertical and left horizontal scroll
         } else {
             cmdbuf[1] = 0x29; // 0b00101001 for vertical and right horizontal scroll
+            cmdbuf[2] = 0x29; // 0b00101001 for vertical and right horizontal scroll
         }
-        cmdbuf[2] = 0x00; // dummy byte
-        cmdbuf[3] = (data && dlen > 0) ? (data[0] & 0x07) : 0x00; // 3-bit Start page address. Default 0b000
-        cmdbuf[4] = (data && dlen > 1) ? (data[1] & 0x07) : 0x00; // 3-bit scroll step in frame frequency
-        cmdbuf[5] = (data && dlen > 2) ? (data[2] & 0x07) : 0x07; // 3-bit end page address. default is last page
-        if (cmdbuf[5] < cmdbuf[3]) {
+        cmdbuf[3] = 0x00; // dummy byte
+        cmdbuf[4] = (data && dlen > 0) ? (data[0] & 0x07) : 0x00; // 3-bit Start page address. Default 0b000
+        cmdbuf[5] = (data && dlen > 1) ? (data[1] & 0x07) : 0x00; // 3-bit scroll step in frame frequency
+        cmdbuf[6] = (data && dlen > 2) ? (data[2] & 0x07) : 0x07; // 3-bit end page address. default is last page
+        if (cmdbuf[6] < cmdbuf[4]) {
             // end page must be larger or equal
             // overwriting
-            cmdbuf[5] = cmdbuf[3];
+            cmdbuf[6] = cmdbuf[4];
         }
-        cmdbuf[6] = (data && dlen > 3) ? (data[3] & 0x3F) : 0x01; // 1-63 rows of vertical offset scrolling
-        sz = 7;
+        cmdbuf[7] = (data && dlen > 3) ? (data[3] & 0x3F) : 0x01; // 1-63 rows of vertical offset scrolling
+        cmdbuf[8] = 0x2F; // activate the scroll
+        sz = 9;
         break;
     case SSD1306_I2C_CMD_SCROLL_VERTICAL_AREA:
         cmdbuf[1] = 0xA3; //0b10100011
-        cmdbuf[2] = (data && dlen > 0) ? (data[0] & 0x3F) : 0x00; // no. of rows in top fixed area. 0 is RESET
-        cmdbuf[3] = (data && dlen > 1) ? (data[1] & 0x7F) : 0x40; // no. of rows in scroll area. 64 is RESET
-        sz = 4;
+        cmdbuf[2] = 0xA3; //0b10100011
+        cmdbuf[3] = (data && dlen > 0) ? (data[0] & 0x3F) : 0x00; // no. of rows in top fixed area. 0 is RESET
+        cmdbuf[4] = (data && dlen > 1) ? (data[1] & 0x7F) : 0x40; // no. of rows in scroll area. 64 is RESET
+        cmdbuf[5] = 0x2F; // activate the scroll
+        sz = 6;
         break;
     case SSD1306_I2C_CMD_NOP: // fallthrough
     default:
