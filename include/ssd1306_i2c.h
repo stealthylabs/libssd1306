@@ -37,6 +37,21 @@ ssd1306_i2c_t *ssd1306_i2c_open( // open the device for read/write
 
 void ssd1306_i2c_close(ssd1306_i2c_t *oled); // free object and close fd
 
+typedef struct {
+    char dev[128]; // valid device name /dev/i2c-[0-9] or /dev/i2c/[0-9] format
+    //each addr array entry holds the valid address. if there are no valid
+    //addresses, then the num_addrs will be 0.
+    uint8_t addrs[0x80]; // list of available addresses. max array size is 0x80.
+                         // skips busy and invalid addresses
+    size_t num_addrs;//number of valid addresses
+} ssd1306_i2c_dev_t;
+
+// return 0 on success and -1 on failure
+int ssd1306_i2c_search_addresses(
+        ssd1306_i2c_dev_t **devs, // pointer to allocated object that user must free
+        size_t *num_devs, //number of devices returned
+        FILE *logerr // FILE* log ptr. use NULL or stderr for default
+    );
 typedef enum {
     SSD1306_I2C_CMD_NOP, // no operation
     // power

@@ -37,6 +37,14 @@
 // forcibly defining the ioctl number
 #undef I2C_SLAVE
 #define I2C_SLAVE 0x0703
+#undef I2C_FUNCS
+#define I2C_FUNCS 0x0705
+#undef I2C_SMBUS
+#undef I2C_SMBUS
+#define I2C_SMBUS 0x0720
+#endif
+#if LIBSSD1306_HAVE_I2C_SMBUS_H
+#include <i2c/smbus.h>
 #endif
 #include <ssd1306_i2c.h>
 
@@ -552,4 +560,102 @@ int ssd1306_i2c_display_clear(ssd1306_i2c_t *oled)
 const char *ssd1306_i2c_version(void)
 {
     return LIBSSD1306_PACKAGE_VERSION;
+}
+
+int ssd1306_i2c_search_addresses(ssd1306_i2c_dev_t **devs, size_t *num_devs, FILE *logerr)
+{
+#if LIBSSD1306_HAVE_I2C_SMBUS_H
+    if (devs && num_devs) {
+        FILE *err_fp = logerr == NULL ? stderr : logerr;
+        const size_t max_devs = 32;
+        ssd1306_i2c_dev_t *devarr = calloc(max_devs, sizeof(ssd1306_i2c_dev_t));
+        if (!devarr) {
+            fprintf(err_fp, "ERROR: Failed to allocate memory of size %zu bytes\n",
+                    sizeof(ssd1306_i2c_dev_t) * max_devs);
+            return -1;
+        }
+        size_t devarridx = 0;
+        char errbuf[128];
+        for (size_t idx = 0; idx < max_devs; ++idx) {
+            //fill the buffer in the allocated path.
+            snprintf(devarr[devarridx].dev, 128, "/dev/i2c-%d", idx);
+            int fd = open(devarr[devarridx].dev, O_RDWR);
+            if (fd < 0) {
+                int errnum = errno;
+                if (errnum == ENODEV || errnum == ENOENT) {
+                    //try another format
+                    snprintf(devarr[devarridx].dev, 128, "/dev/i2c/%d", idx);
+                    fd = open(devarr[devarridx].dev, O_RDWR);
+                    if (fd < 0) {
+                        errnum = errno;
+                        if (errnum == ENODEV || errnum == ENOENT) {
+                            continue;
+                        } else {
+                            fprintf(err_fp, "Device %s has unexpected error: %s (%d)\n",
+                                devarr[devarridx].dev,
+                                strerror_r(errnum, errbuf, sizeof(errbuf)), errnum);
+                        }
+                    }
+                } else {
+                    fprintf(err_fp, "Device %s has unexpected error: %s (%d)\n",
+                            devarr[devarridx].dev,
+                            strerror_r(errnum, errbuf, sizeof(errbuf)), errnum);
+                }
+            }
+            if (fd > 0) {
+                fprintf(err_fp, "INFO: Opened %s at fd %d. Device exists!\n",
+                        devarr[devarridx].dev, fd);
+                devarr[devarridx].num_addrs = 0;
+                unsigned long ifunc = 0;
+                if (ioctl(fd, I2C_FUNCS, &ifunc) < 0) {
+                    fprintf(err_fp, "WARN: I2C Function mask not set. Return value: %ld\n",
+                            ifunc);
+                } else {
+                    fprintf(err_fp, "INFO: I2C Function mask set. Return value: %ld\n",
+                            ifunc);
+                    //is the check allowed
+                    if (ifunc & (I2C_FUNC_SMBUS_QUICK | I2C_FUNC_SMBUS_READ_BYTE)) {
+                        for (uint32_t adx = 0; adx < 0x80; adx++) {
+                            //iterate over all addresses to see if they exist
+                            int rc = ioctl(fd, I2C_SLAVE, adx);
+                            if (rc < 0) {
+                                if (errno == EBUSY) {
+                                    fprintf(err_fp, "INFO: Found address 0x%02x at fd %d but it is in use.\n",
+                                        adx, fd);
+                                }
+                                continue;
+                            }
+                            int do_read = 0;
+                            if (adx >= 0x30 || adx <= 0x37) {
+                                do_read = 1;
+                            } else if (adx >= 0x50 || adx <= 0x5F) {
+                                do_read = 1;
+                            }
+                            if ((ifunc & I2C_FUNC_SMBUS_READ_BYTE) && do_read) {
+                                rc = i2c_smbus_read_byte(fd);
+                            } else if (ifunc & I2C_FUNC_SMBUS_QUICK) {
+                                rc = i2c_smbus_write_quick(fd, I2C_SMBUS_WRITE);
+                            }
+                            if (rc < 0) {
+                                //skip
+                            } else {
+                                devarr[devarridx].addrs[devarr[devarridx].num_addrs++] = (uint8_t)adx;
+                                fprintf(err_fp, "INFO: Found address 0x%02x at fd %d.\n",
+                                        adx, fd);
+                            }
+                        }
+                    }
+                }
+                close(fd);
+                fprintf(err_fp, "INFO: Closed device %s\n",
+                        devarr[devarridx].dev);
+                devarridx++;
+            }
+        }
+        *devs = devarr;
+        *num_devs = devarridx;
+        return 0;
+    }
+#endif
+    return -1;
 }

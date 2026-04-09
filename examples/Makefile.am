@@ -9,6 +9,12 @@ SSD1306_LIB=$(top_builddir)/src/libssd1306_i2c.la
 test_i2c_128x32_SOURCES=i2c_128x32_graphics.c
 test_i2c_128x32_LDADD=$(SSD1306_LIB)
 
+if HAVE_LIBI2C
+noinst_PROGRAMS+=test_i2c_list
+test_i2c_list_SOURCES=i2c_list.c
+test_i2c_list_LDADD=$(SSD1306_LIB)
+endif
+
 test_fb_graphics_SOURCES=fb_graphics.c
 test_fb_graphics_CFLAGS=
 test_fb_graphics_LDADD=$(SSD1306_LIB)

@@ -100,6 +100,23 @@ fi
 AC_SUBST([AM_CFLAGS])
 AC_SUBST([AM_LDFLAGS])
 
+AC_MSG_CHECKING([if libi2c is installed])
+PKG_CHECK_MODULES([LIBI2C], [libi2c],
+                    [
+                     use_libi2c=true
+                     AC_DEFINE([HAVE_LIBI2C], [1], [Have libi2c])
+                    ],
+                    [
+                     AC_CHECK_HEADERS([i2c/smbus.h], [use_libi2c=true], [use_libi2c=false])
+                     AC_CHECK_LIB([i2c], [i2c_smbus_read_byte], [use_libi2c=true], [use_libi2c=false])
+                     LIBI2C_LIBS="-li2c"
+                     echo "Setting LIBI2C_LIBS = $LIBI2C_LIBS"
+                    ]
+                    )
+AM_CONDITIONAL([HAVE_LIBI2C], [test "x$use_libi2c" = "xtrue"])
+AC_SUBST([LIBI2C_CFLAGS])
+AC_SUBST([LIBI2C_LIBS])
+
 AC_MSG_CHECKING([if freetype2 is installed])
 PKG_CHECK_MODULES([FREETYPE2], [freetype2],
                     [
